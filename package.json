@@ -1,0 +1,41 @@
+{
+  "name": "ripple",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "verify:levels": "tsx scripts/verify-levels.ts",
+    "verify:content": "tsx scripts/verify-content.ts",
+    "verify:release": "npm run typecheck && npm run lint && npm run test && npm run verify:levels && npm run verify:content",
+    "package:release": "tsx scripts/package-release.ts"
+  },
+  "dependencies": {
+    "pixi.js": "8.20.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.10.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "10.10.0",
+    "fake-indexeddb": "6.2.5",
+    "globals": "16.5.0",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vite": "8.3.0",
+    "vite-plugin-pwa": "1.3.0",
+    "vitest": "5.0.1"
+  }
+}

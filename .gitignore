@@ -1,0 +1,9 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+coverage/
+release/*.zip
+release/*.sha256
+.env*
+!.env.example
