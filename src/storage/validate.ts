@@ -5,6 +5,7 @@ import { validatePlan } from '../game/validate';
 import {
   DEFAULT_SETTINGS,
   GAME_RULE_VERSION,
+  LEVEL_ONE_TUTORIAL_COMPLETE_STEP,
   SAVE_LIMITS,
   SAVE_SCHEMA_VERSION,
   type PlayerSettings,
@@ -73,12 +74,16 @@ const parseSavedPlan = (value: unknown, levelId: string): SavedPlan => {
   if (!isRecord(value) || !isRecord(value.plan) || !Number.isInteger(value.revision) || Number(value.revision) < 0) {
     throw new SaveValidationError(`Level ${levelId} has invalid plan state.`);
   }
+  if (value.tutorialStep !== undefined && (!Number.isInteger(value.tutorialStep) || Number(value.tutorialStep) < 0 || Number(value.tutorialStep) > LEVEL_ONE_TUTORIAL_COMPLETE_STEP)) {
+    throw new SaveValidationError(`Level ${levelId} has invalid tutorial progress.`);
+  }
   const level = campaign.find((candidate) => candidate.id === levelId)!;
   return {
     plan: validatePlan(level, value.plan as Plan),
     undo: parseHistory(value.undo, levelId),
     redo: parseHistory(value.redo, levelId),
     revision: Number(value.revision),
+    ...(value.tutorialStep === undefined ? {} : { tutorialStep: Number(value.tutorialStep) }),
   };
 };
 

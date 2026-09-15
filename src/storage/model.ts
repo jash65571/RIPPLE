@@ -2,6 +2,7 @@ import type { Plan } from '../game/model';
 
 export const SAVE_SCHEMA_VERSION = 1;
 export const GAME_RULE_VERSION = 1;
+export const LEVEL_ONE_TUTORIAL_COMPLETE_STEP = 7;
 export const SAVE_LIMITS = {
   importBytes: 256 * 1024,
   historyEntries: 40,
@@ -13,6 +14,7 @@ export interface SavedPlan {
   readonly undo: readonly Plan[];
   readonly redo: readonly Plan[];
   readonly revision: number;
+  readonly tutorialStep?: number;
 }
 
 export interface PlayerSettings {

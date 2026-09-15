@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+const openRobotRoutes = async (page: import('@playwright/test').Page): Promise<void> => {
+  const skip = page.getByRole('button', { name: 'Skip tutorial', exact: true });
+  if (await skip.isVisible()) await skip.click();
+  await page.getByRole('button', { name: 'Select vehicle', exact: true }).click();
+  await page.getByRole('button', { name: 'Parcel robot', exact: true }).click();
+};
+
 test('works offline after the first complete load', async ({ page, context, browserName }) => {
   test.skip(browserName !== 'chromium', 'Playwright supports service workers only in Chromium.');
   await page.goto('/play/#/level/10?v=1');
@@ -38,15 +45,19 @@ test('notifies a stale tab before it can overwrite progress', async ({ page, con
   await page.goto('/play/#/level/01?v=1');
   const other = await context.newPage();
   await other.goto('/play/#/level/01?v=1');
+  await openRobotRoutes(page);
   await page.getByRole('button', { name: 'Garden path', exact: true }).click();
+  await other.getByRole('button', { name: 'Menu', exact: true }).click();
   await expect(other.getByRole('status').filter({ hasText: 'Newer save found' })).toBeVisible();
   await other.close();
 });
 
 test('exports, previews, and imports progress through settings', async ({ page }) => {
   await page.goto('/play/#/level/01?v=1');
+  await openRobotRoutes(page);
   await page.getByRole('button', { name: 'Garden path', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export progress' }).click();
   const download = await downloadPromise;

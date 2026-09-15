@@ -11,6 +11,9 @@ interface LevelOneHarborSceneProps {
   readonly selectedActorId: string;
   readonly zoom: number;
   readonly reducedMotion: boolean;
+  readonly showRobotRoutes: boolean;
+  readonly emphasizeDestinations: boolean;
+  readonly bottomSheetOpen: boolean;
   readonly onSelectActor: (actorId: string) => void;
 }
 
@@ -42,6 +45,7 @@ const SCENE_COLORS = {
 } as const;
 
 const CAMERA_FRUSTUM = 23;
+const MIN_HORIZONTAL_FRUSTUM = 24;
 const VEHICLE_HEIGHT = 1.18;
 const WATER_VERTEX_MOTION = 0.08;
 const CAMERA_POSITION = new THREE.Vector3(20, 20, 23);
@@ -204,8 +208,53 @@ const createActorVisual = (actorId: string): ActorVisual => {
   waitSignal.rotation.x = Math.PI / 2;
   waitSignal.position.y = 1.95;
   waitSignal.visible = false;
-  root.add(model, selection, waitSignal);
+  const touchTarget = new THREE.Mesh(
+    new THREE.BoxGeometry(actorId === 'B' ? 3.4 : 2.8, 3, actorId === 'B' ? 2.4 : 2.8),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  );
+  touchTarget.position.y = 1.1;
+  touchTarget.userData.actorId = actorId;
+  root.add(model, selection, waitSignal, touchTarget);
   return { root, selection, waitSignal };
+};
+
+const createRouteLine = (curves: readonly THREE.CatmullRomCurve3[]): THREE.Group => {
+  const group = new THREE.Group();
+  for (const curve of curves) {
+    const raisedCurve = new THREE.CatmullRomCurve3(curve.points.map((routePoint) => new THREE.Vector3(routePoint.x, 1.5, routePoint.z)));
+    const route = new THREE.Mesh(
+      new THREE.TubeGeometry(raisedCurve, 36, 0.1, 8, false),
+      new THREE.MeshBasicMaterial({ color: SCENE_COLORS.robot, transparent: true, opacity: 0.34, depthWrite: false }),
+    );
+    route.renderOrder = 4;
+    group.add(route);
+  }
+  return group;
+};
+
+const setRouteStyle = (group: THREE.Group, selected: boolean): void => {
+  group.traverse((child) => {
+    if (!(child instanceof THREE.Mesh) || !(child.material instanceof THREE.MeshBasicMaterial)) return;
+    child.material.color.setHex(selected ? SCENE_COLORS.robot : SCENE_COLORS.white);
+    child.material.opacity = selected ? 0.95 : 0.42;
+  });
+};
+
+const createDestination = (color: number): THREE.Group => {
+  const destination = new THREE.Group();
+  const marker = roundedBox([0.42, 1.35, 0.42], color, 0.14);
+  marker.position.y = 0.72;
+  const cap = roundedBox([0.8, 0.24, 0.8], SCENE_COLORS.white, 0.12);
+  cap.position.y = 1.44;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.72, 0.9, 32),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.82, depthWrite: false }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.04;
+  ring.renderOrder = 3;
+  destination.add(marker, cap, ring);
+  return destination;
 };
 
 const routeCurves = (routeId: string): Readonly<Record<string, readonly THREE.CatmullRomCurve3[]>> => ({
@@ -330,11 +379,14 @@ export function LevelOneHarborScene({
   selectedActorId,
   zoom,
   reducedMotion,
+  showRobotRoutes,
+  emphasizeDestinations,
+  bottomSheetOpen,
   onSelectActor,
 }: LevelOneHarborSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const stateRef = useRef({ level, plan, result, timelineBeat, selectedActorId, zoom, reducedMotion, onSelectActor });
-  stateRef.current = { level, plan, result, timelineBeat, selectedActorId, zoom, reducedMotion, onSelectActor };
+  const stateRef = useRef({ level, plan, result, timelineBeat, selectedActorId, zoom, reducedMotion, showRobotRoutes, emphasizeDestinations, bottomSheetOpen, onSelectActor });
+  stateRef.current = { level, plan, result, timelineBeat, selectedActorId, zoom, reducedMotion, showRobotRoutes, emphasizeDestinations, bottomSheetOpen, onSelectActor };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -387,11 +439,24 @@ export function LevelOneHarborScene({
       scene.add(visual.root);
     }
 
+    const crossingRoute = createRouteLine(routeCurves('crossing').R!);
+    const gardenRoute = createRouteLine(routeCurves('garden').R!);
+    scene.add(crossingRoute, gardenRoute);
+
+    const robotDestination = createDestination(SCENE_COLORS.robot);
+    robotDestination.position.set(ENDS.R.x, 1.05, ENDS.R.z);
+    const busDestination = createDestination(SCENE_COLORS.bus);
+    busDestination.position.set(ENDS.B.x, 1.05, ENDS.B.z);
+    scene.add(robotDestination, busDestination);
+
     const resize = (): void => {
       const width = Math.max(1, host.clientWidth);
       const height = Math.max(1, host.clientHeight);
       const aspect = width / height;
-      const frustum = CAMERA_FRUSTUM / stateRef.current.zoom;
+      const baseFrustum = CAMERA_FRUSTUM / stateRef.current.zoom;
+      const horizontalFit = MIN_HORIZONTAL_FRUSTUM / aspect;
+      const sheetScale = stateRef.current.bottomSheetOpen ? 1.1 : 1;
+      const frustum = Math.max(baseFrustum, horizontalFit) * sheetScale;
       camera.left = -frustum * aspect / 2;
       camera.right = frustum * aspect / 2;
       camera.top = frustum / 2;
@@ -402,7 +467,7 @@ export function LevelOneHarborScene({
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(host);
     resize();
-    let renderedZoom = stateRef.current.zoom;
+    let renderedFraming = `${stateRef.current.zoom}:${stateRef.current.bottomSheetOpen}`;
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -425,8 +490,9 @@ export function LevelOneHarborScene({
       timer.update();
       const elapsed = timer.getElapsed();
       const current = stateRef.current;
-      if (current.zoom !== renderedZoom) {
-        renderedZoom = current.zoom;
+      const currentFraming = `${current.zoom}:${current.bottomSheetOpen}`;
+      if (currentFraming !== renderedFraming) {
+        renderedFraming = currentFraming;
         resize();
       }
       const routeValue = current.plan[planKey('R', 'route')];
@@ -447,6 +513,14 @@ export function LevelOneHarborScene({
           visual.waitSignal.rotation.z = elapsed * 0.8;
         }
       }
+
+      crossingRoute.visible = current.showRobotRoutes;
+      gardenRoute.visible = current.showRobotRoutes;
+      setRouteStyle(crossingRoute, robotRoute === 'crossing');
+      setRouteStyle(gardenRoute, robotRoute === 'garden');
+      const destinationScale = current.emphasizeDestinations && !current.reducedMotion ? 1 + Math.sin(elapsed * 3) * 0.08 : 1;
+      robotDestination.scale.setScalar(destinationScale);
+      busDestination.scale.setScalar(destinationScale);
 
       if (!current.reducedMotion) {
         const positions = waterGeometry.getAttribute('position') as THREE.BufferAttribute;

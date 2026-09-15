@@ -43,11 +43,12 @@ describe('save repository', () => {
     const initial = createEmptySave(new Date('2026-09-15T12:00:00.000Z'));
     const document = {
       ...initial,
-      plans: { '01': { plan: { 'R.route': 'garden' }, undo: [], redo: [], revision: 1 } },
+      plans: { '01': { plan: { 'R.route': 'garden' }, undo: [], redo: [], revision: 1, tutorialStep: 7 } },
     };
     const json = repository.exportJson(document);
     const imported = await repository.importJson(json, 0);
     expect(imported.plans['01']?.plan).toEqual({ 'R.route': 'garden' });
+    expect(imported.plans['01']?.tutorialStep).toBe(7);
     repository.close();
   });
 
@@ -89,6 +90,10 @@ describe('save validation', () => {
       ...valid(),
       plans: { '01': { plan: { 'B.route': 'main' }, undo: [], redo: [], revision: 1 } },
     }))).toThrow(/not allowed/i);
+    expect(() => parseSaveJson(JSON.stringify({
+      ...valid(),
+      plans: { '01': { plan: { 'R.route': 'garden' }, undo: [], redo: [], revision: 1, tutorialStep: 8 } },
+    }))).toThrow(/tutorial progress/i);
   });
 
   it('rejects oversized files before parsing', () => {
