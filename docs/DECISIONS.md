@@ -7,6 +7,7 @@
 - Keep simulation state independent of React and PixiJS. React owns discrete plan and navigation state. PixiJS receives an immutable result and event index.
 - Validate the supplied campaign JSON at import time. Invalid content fails before a puzzle can render.
 - Keep the product name and public identity in one configuration module. Missing publisher and support values remain empty in review mode and must block a later public release check.
+- Spread the Vite PWA plugin list into Vite's top-level plugin array. Vite 8.3 omitted the plugin's service-worker generation hook when the returned plugin list remained nested.
 - Draw all visible first-party scene objects with PixiJS primitives or CSS. Do not add first-party SVG assets.
 - Keep one PixiJS application alive while a level scene changes. Rebuilding it unloaded shared text textures and could blank the React root.
 - Generate sound with the Web Audio API so the game ships no sample library or licensed recording.

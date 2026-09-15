@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('works offline after the first complete load', async ({ page, context }) => {
+test('works offline after the first complete load', async ({ page, context, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Playwright supports service workers only in Chromium.');
   await page.goto('/play/#/level/10?v=1');
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload();

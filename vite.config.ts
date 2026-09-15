@@ -37,33 +37,35 @@ const publicMetadata = () => ({
   },
 });
 
+const pwaPlugins = VitePWA({
+  registerType: 'prompt', injectRegister: null,
+  includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+  manifest: {
+    id: '/play/', name: `${PRODUCT.name} Harbor Puzzles`, short_name: PRODUCT.name,
+    description: 'Watch a harbor delay, change the plan, and test every possible day.',
+    start_url: '/play/', scope: '/', display: 'standalone',
+    background_color: '#F7F8FC', theme_color: '#2952CC',
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+      { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  },
+  workbox: {
+    cleanupOutdatedCaches: true, clientsClaim: false, skipWaiting: false,
+    navigateFallback: '/play/index.html',
+    navigateFallbackDenylist: [/^\/(?:about|accessibility|credits|how-to-play|privacy|support|terms)\//],
+    globPatterns: ['**/*.{html,js,css,png,json,txt,webmanifest}'],
+  },
+});
+
 export default defineConfig({
   define: { __RIPPLE_BUILD_ID__: JSON.stringify(process.env.RIPPLE_BUILD_ID ?? 'release') },
   plugins: [
     publicMetadata(),
     react(),
-    VitePWA({
-      registerType: 'prompt', injectRegister: null,
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
-      manifest: {
-        id: '/play/', name: `${PRODUCT.name} Harbor Puzzles`, short_name: PRODUCT.name,
-        description: 'Watch a harbor delay, change the plan, and test every possible day.',
-        start_url: '/play/', scope: '/', display: 'standalone',
-        background_color: '#F7F8FC', theme_color: '#2952CC',
-        icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        cleanupOutdatedCaches: true, clientsClaim: false, skipWaiting: false,
-        navigateFallback: '/play/index.html',
-        navigateFallbackDenylist: [/^\/(?:about|accessibility|credits|how-to-play|privacy|support|terms)\//],
-        globPatterns: ['**/*.{html,js,css,png,json,txt,webmanifest}'],
-      },
-    }),
+    ...pwaPlugins,
   ],
   base: '/',
   build: {

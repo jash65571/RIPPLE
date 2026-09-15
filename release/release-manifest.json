@@ -3,13 +3,13 @@
   "files": [
     {
       "file": "ripple-web-v1.zip",
-      "bytes": 947490,
-      "sha256": "0a89088ad5b6b39337347615ec4d3f93ec3adc7ead9a16313ca9274a0183f774"
+      "bytes": 947538,
+      "sha256": "f262433f6e1edf1bb1a47fa65d409b092781146fd58d8f1bc8fe3ed76d879826"
     },
     {
       "file": "ripple-itch-html5-v1.zip",
-      "bytes": 832424,
-      "sha256": "5089ca0ddef7ffa7f19bd79168ea5f6d1828e9c6799164dde30daccee916939f"
+      "bytes": 832437,
+      "sha256": "b9ab6d1adfe0db15e4d7cb98590f04dc1c69e64342803ca9b85cbd50a00d0059"
     }
   ]
 }

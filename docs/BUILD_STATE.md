@@ -23,7 +23,7 @@ Updated September 15, 2026.
 - Level verifier: 10 levels, 36 allowed plans, and one solution per level passed.
 - Content verifier: 72 first-party text files passed with no prohibited dashes or first-party SVG artwork.
 - Production web and embedded builds: passed.
-- Chromium browser suite: 12 stories passed in 46.0 seconds, including all ten levels, the returning-player landing state, and both target layouts.
+- Cross-browser suite: Chromium passed all 12 stories, while Firefox and WebKit passed 11 supported stories each. The full run completed with 34 passed and 2 unsupported service-worker skips in 1.2 minutes.
 - PWA A/B cycle: update prompt, controlled activation, reload, and save retention passed.
 - Chromium desktop screenshot run: all ten levels passed without horizontal overflow.
 - Offline, recovery, multiple futures, keyboard, stale-tab, local-only network, and import/export browser checks are included in the final suite.
@@ -35,7 +35,6 @@ Updated September 15, 2026.
 - RIPPLE is a working name with existing games using the same name. Final naming and trademark clearance are required.
 - Publisher name, support route, production URL, governing terms details, and legal approval are missing.
 - Physical iOS and Android acceptance, store accounts, listing forms, age ratings, and privacy labels require owner access.
-- Playwright Firefox and WebKit downloads timed out across available mirrors, so those engine runs require another network or machine.
 - Hosted headers, public URLs, social previews, and production service-worker behavior can be checked only after a private deployment exists.
 
-No public deployment, purchase, outreach, commit, or push was performed.
+No public deployment, purchase, or outreach was performed.

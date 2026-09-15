@@ -6,7 +6,7 @@ const layouts = [
 ] as const;
 
 for (const layout of layouts) {
-  test(`all levels fit the ${layout.name} layout`, async ({ page }) => {
+  test(`all levels fit the ${layout.name} layout`, async ({ page, browserName }) => {
     await page.setViewportSize({ width: layout.width, height: layout.height });
     for (let level = 1; level <= 10; level += 1) {
       const id = String(level).padStart(2, '0');
@@ -14,7 +14,9 @@ for (const layout of layouts) {
       await expect(page.locator('.harbor-scene canvas')).toBeVisible({ timeout: 15_000 });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, `level ${id} has horizontal overflow`).toBeLessThanOrEqual(1);
-      await page.screenshot({ path: `release/qa/${layout.name}/level-${id}.png`, fullPage: true });
+      if (browserName === 'chromium') {
+        await page.screenshot({ path: `release/qa/${layout.name}/level-${id}.png`, fullPage: true });
+      }
     }
   });
 }
