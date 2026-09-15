@@ -3,9 +3,10 @@ import { PRODUCT, UI_COPY } from '../config/product';
 interface HomeScreenProps {
   readonly onStart: () => void;
   readonly onChapters: () => void;
+  readonly hasProgress: boolean;
 }
 
-export function HomeScreen({ onStart, onChapters }: HomeScreenProps) {
+export function HomeScreen({ onStart, onChapters, hasProgress }: HomeScreenProps) {
   return (
     <main className="home-screen">
       <nav className="site-nav" aria-label="Main navigation">
@@ -18,7 +19,7 @@ export function HomeScreen({ onStart, onChapters }: HomeScreenProps) {
           <h1>Watch the delay.<br />Change the plan.</h1>
           <p>Follow each vehicle through the morning. Rewind the events, adjust one starting rule, and test whether the whole harbor still arrives on time.</p>
           <div className="hero-actions">
-            <button className="primary-button" type="button" onClick={onStart}>{UI_COPY.start}</button>
+            <button className="primary-button" type="button" onClick={onStart}>{hasProgress ? 'Continue saved puzzle' : UI_COPY.start}</button>
             <button type="button" onClick={onChapters}>Browse all ten puzzles</button>
           </div>
         </div>

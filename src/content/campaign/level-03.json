@@ -1,0 +1,57 @@
+{
+  "id": "03",
+  "version": 1,
+  "budget": 1,
+  "actors": [
+    {
+      "id": "B",
+      "start": 0,
+      "deadline": 6,
+      "routes": {
+        "bridge": [
+          [
+            "X",
+            3
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "quay": [
+          [
+            null,
+            5
+          ]
+        ]
+      },
+      "defaultRoute": "bridge",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "B",
+      "field": "route",
+      "values": [
+        "bridge",
+        "quay"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "bridge-raised",
+      "starts": {},
+      "deadlines": {},
+      "closures": {
+        "X": [
+          [
+            0,
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}

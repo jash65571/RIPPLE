@@ -3,12 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Watch a harbor delay, change the plan, and test what happens next." />
+    <meta name="description" content="A calm cause-and-effect puzzle game about fixing a chain of harbor delays." />
     <meta name="robots" content="noindex, nofollow" />
-    <title>RIPPLE private review</title>
+    <meta property="og:title" content="RIPPLE | Harbor cause-and-effect puzzles" />
+    <meta property="og:description" content="Watch a harbor delay, change one rule, and test every possible day." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/marketing/harbor-hero.png" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="640" />
+    <link rel="icon" sizes="32x32" href="/favicon-32.png" />
+    <link rel="stylesheet" href="/site.css" />
+    <title>RIPPLE | Harbor cause-and-effect puzzles</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <header class="site-header"><a class="wordmark" href="/">RIPPLE</a><nav aria-label="Main navigation"><a href="/how-to-play/">How to play</a><a href="/accessibility/">Accessibility</a><a class="nav-play" data-resume-link href="/play/">Play free</a></nav></header>
+    <main>
+      <section class="site-hero"><div><p class="kicker">Ten puzzles in a tiny harbor</p><h1>Watch the delay.<br />Change the plan.</h1><p class="lead">Follow a bus, a parcel robot, and a market cart through the morning. Rewind what happened, change one starting rule, and test whether everyone still arrives on time.</p><a class="site-button" data-resume-link href="/play/">Play free</a></div><img src="/marketing/harbor-hero.png" width="800" height="640" alt="RIPPLE gameplay showing harbor routes and three vehicles" /></section>
+      <section class="site-steps" aria-labelledby="steps-title"><h2 id="steps-title">A small change can clear the whole street</h2><div><article><b>1</b><h3>Watch</h3><p>See where the original plan creates a queue.</p></article><article><b>2</b><h3>Change</h3><p>Choose a route or departure time within the limit.</p></article><article><b>3</b><h3>Test</h3><p>Run one plan across every known version of the day.</p></article></div></section>
+      <section class="feature-band"><div><p class="kicker">The complete first chapter</p><h2>Ten hand-built puzzles, no login and no ads</h2></div><ul><li>One to three possible days per puzzle</li><li>Event-by-event inspection and a full text view</li><li>Local progress export and offline installation</li><li>Keyboard, touch, reduced motion, and text sizing controls</li></ul></section>
+    </main>
+    <footer><span>RIPPLE private review</span><nav aria-label="Footer"><a href="/about/">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/support/">Support</a><a href="/credits/">Credits</a></nav></footer>
+    <script type="module" src="/src/public-home.ts"></script>
   </body>
 </html>

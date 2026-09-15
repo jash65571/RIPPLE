@@ -199,30 +199,47 @@ const createScene = (
 
 export function HarborScene({ level, plan, result, eventIndex }: HarborSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<Application | null>(null);
+  const sceneRef = useRef({ level, plan, result, eventIndex });
+  sceneRef.current = { level, plan, result, eventIndex };
+
+  const renderScene = (): void => {
+    const app = appRef.current;
+    if (app === null) return;
+    const scene = sceneRef.current;
+    app.stage.removeChildren();
+    app.stage.addChild(createScene(scene.level, scene.plan, scene.result, scene.eventIndex));
+    app.render();
+  };
 
   useEffect(() => {
     const host = hostRef.current;
     if (host === null) return;
     let disposed = false;
+    let initialized = false;
     const app = new Application();
 
     void (async () => {
       await app.init({ width: WIDTH, height: HEIGHT, antialias: true, background: '#F7F8FC', autoStart: false, resolution: Math.min(window.devicePixelRatio, 2) });
+      initialized = true;
       if (disposed) {
-        app.destroy(true);
+        app.destroy(true, { children: false });
         return;
       }
       app.canvas.setAttribute('aria-hidden', 'true');
       host.replaceChildren(app.canvas);
-      app.stage.addChild(createScene(level, plan, result, eventIndex));
-      app.render();
+      appRef.current = app;
+      renderScene();
     })();
 
     return () => {
       disposed = true;
-      app.destroy(true, { children: true });
+      if (appRef.current === app) appRef.current = null;
+      if (initialized) app.destroy(true, { children: false });
     };
-  }, [eventIndex, level, plan, result]);
+  }, []);
+
+  useEffect(renderScene, [eventIndex, level, plan, result]);
 
   return <div className="harbor-scene" ref={hostRef} />;
 }

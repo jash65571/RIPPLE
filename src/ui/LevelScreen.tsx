@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { soundEngine } from '../audio/sound';
 import { ACTOR_LABELS, ROUTE_LABELS, SCENARIO_LABELS, UI_COPY } from '../config/product';
 import { levelContent } from '../content/campaign/content';
-import { planKey, type LevelDefinition, type Plan, type SimulationResult, type TraversalTraceEvent } from '../game/model';
-import { applyPlanEdit, createPlanState, planCost, redoPlanEdit, resetPlan, undoPlanEdit } from '../game/plan';
+import { campaignSolutions } from '../content/campaign/solutions';
+import { planKey, type LevelDefinition, type Plan, type PlanKey, type PlanValue, type SimulationResult, type TraversalTraceEvent } from '../game/model';
+import { applyPlanEdit, createPlanState, planCost, redoPlanEdit, resetPlan, restoreRecovery, revealSolution, undoPlanEdit } from '../game/plan';
 import { simulate } from '../game/simulate';
-import { HarborScene } from '../render/HarborScene';
 import type { SavedPlan } from '../storage/model';
+import type { PlayerSettings } from '../storage/model';
+import { ModalDialog } from './ModalDialog';
+import { SceneBoundary } from './SceneBoundary';
 
 interface LevelScreenProps {
   readonly level: LevelDefinition;
@@ -15,6 +19,8 @@ interface LevelScreenProps {
   readonly savedPlan?: SavedPlan;
   readonly saveStatus: 'saved' | 'saving' | 'failed' | 'conflict';
   readonly onPlanChange: (levelId: string, plan: SavedPlan) => void;
+  readonly settings: PlayerSettings;
+  readonly onOpenSettings: () => void;
 }
 
 type ScenarioResults = Readonly<Record<string, SimulationResult>>;
@@ -24,15 +30,22 @@ const describeWait = (event: TraversalTraceEvent): string => {
     return `waited for ${ACTOR_LABELS[event.waitingReason.occupancy.actorId] ?? event.waitingReason.occupancy.actorId} until beat ${event.waitingReason.occupancy.end}`;
   }
   if (event.waitingReason.kind === 'closure') {
-    return `waited for the closure through beat ${event.waitingReason.closure.end}`;
+    return `waited for the closure until beat ${event.waitingReason.closure.end}`;
   }
   if (event.waitingReason.kind === 'occupancy-and-closure') {
-    return `waited for another vehicle, then for the closure through beat ${event.waitingReason.closure.end}`;
+    return `waited for another vehicle, then for the closure until beat ${event.waitingReason.closure.end}`;
   }
   return 'moved without waiting';
 };
 
-export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, saveStatus, onPlanChange }: LevelScreenProps) {
+const EMPTY_PLAN: Plan = {};
+const ZOOM_LEVELS = [0.8, 1, 1.2] as const;
+const HarborScene = lazy(async () => {
+  const module = await import('../render/HarborScene');
+  return { default: module.HarborScene };
+});
+
+export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, saveStatus, onPlanChange, settings, onOpenSettings }: LevelScreenProps) {
   const content = levelContent[level.id]!;
   const [planState, setPlanState] = useState(() => savedPlan === undefined ? createPlanState() : { ...savedPlan, recovery: null });
   const [results, setResults] = useState<ScenarioResults>({});
@@ -41,9 +54,16 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
   const [hintIndex, setHintIndex] = useState(-1);
   const [showTextView, setShowTextView] = useState(false);
   const [compareOriginal, setCompareOriginal] = useState(false);
+  const [playing, setPlaying] = useState(!settings.reducedMotion);
+  const [speed, setSpeed] = useState<0.5 | 1 | 2>(1);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [tutorialVisible, setTutorialVisible] = useState(Number(level.id) <= 3 || ['07', '09'].includes(level.id));
+  const [revealPending, setRevealPending] = useState(false);
+  const [selectedActorId, setSelectedActorId] = useState(level.actors[0]!.id);
+  const [zoomIndex, setZoomIndex] = useState(1);
 
   const selectedScenario = level.scenarios.find((scenario) => scenario.id === selectedScenarioId)!;
-  const viewedPlan: Plan = compareOriginal ? {} : planState.plan;
+  const viewedPlan: Plan = compareOriginal ? EMPTY_PLAN : planState.plan;
   const viewedResult = useMemo(
     () => simulate(level, viewedPlan, selectedScenario),
     [level, selectedScenario, viewedPlan],
@@ -54,6 +74,40 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
   const allTested = level.scenarios.every((scenario) => results[scenario.id] !== undefined);
   const allPassed = allTested && level.scenarios.every((scenario) => results[scenario.id]!.passed);
   const changesUsed = planCost(level, planState.plan);
+  const selectedActor = level.actors.find((actor) => actor.id === selectedActorId) ?? level.actors[0]!;
+  const selectedRouteValue = viewedPlan[planKey(selectedActor.id, 'route')];
+  const selectedRoute = typeof selectedRouteValue === 'string' ? selectedRouteValue : selectedActor.defaultRoute;
+  const selectedStartValue = viewedPlan[planKey(selectedActor.id, 'start')];
+  const selectedStart = typeof selectedStartValue === 'number' ? selectedStartValue : selectedScenario.starts[selectedActor.id] ?? selectedActor.start;
+  const solutionEntries = Object.entries(campaignSolutions[level.id]!) as readonly [PlanKey, PlanValue][];
+  const unresolvedSolutionEntries = solutionEntries.filter(([key, value]) => planState.plan[key] !== value);
+  const specificHint = unresolvedSolutionEntries.length === 0
+    ? 'Your plan already matches the solution. Test it across every possible day.'
+    : unresolvedSolutionEntries.length < solutionEntries.length
+      ? `Keep the choice you already found. The remaining change is ${unresolvedSolutionEntries.map(([key, value]) => `${ACTOR_LABELS[key.split('.')[0]!] ?? key} ${key.endsWith('.start') ? `start at beat ${value}` : `route to ${ROUTE_LABELS[String(value)] ?? value}`}`).join(' and ')}.`
+      : content.hints[2];
+
+  useEffect(() => {
+    if (!playing || settings.reducedMotion || traversalEvents.length === 0) return;
+    const timer = window.setTimeout(() => {
+      setEventIndex((index) => {
+        if (index >= traversalEvents.length - 1) { setPlaying(false); return index; }
+        return index + 1;
+      });
+    }, 600 / speed);
+    return () => window.clearTimeout(timer);
+  }, [eventIndex, playing, settings.reducedMotion, speed, traversalEvents.length]);
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.code === 'Space') { event.preventDefault(); setPlaying((value) => !value); }
+      if (event.key.toLowerCase() === 'z') changeHistory('undo');
+      if (event.key.toLowerCase() === 'y') changeHistory('redo');
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  });
 
   const editPlan = (actorId: string, field: 'route' | 'start', value: string | number): void => {
     const next = applyPlanEdit(level, planState, planKey(actorId, field), value);
@@ -62,6 +116,7 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
     setResults({});
     setEventIndex(0);
     setCompareOriginal(false);
+    setPlaying(false);
   };
 
   const testPlan = (): void => {
@@ -73,6 +128,9 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
     setCompareOriginal(false);
     if (Object.values(nextResults).every((result) => result.passed)) {
       onComplete(level.id);
+      void soundEngine.effect('success', settings.effects);
+    } else {
+      void soundEngine.effect('failure', settings.effects);
     }
   };
 
@@ -83,6 +141,22 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
     setResults({});
     setEventIndex(0);
     setCompareOriginal(false);
+    setPlaying(false);
+  };
+
+  const persistPlanState = (next: typeof planState): void => {
+    setPlanState(next);
+    onPlanChange(level.id, { plan: next.plan, undo: next.undo, redo: next.redo, revision: next.revision });
+    setResults({});
+    setEventIndex(0);
+    setPlaying(false);
+  };
+
+  const confirmReveal = (): void => {
+    const next = revealSolution(level, planState, campaignSolutions[level.id]!);
+    persistPlanState(next);
+    setRevealPending(false);
+    setHintIndex(2);
   };
 
   return (
@@ -93,15 +167,13 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
           <p className="eyebrow">Level {level.id} · {content.chapter}</p>
           <h1>{content.title}</h1>
         </div>
-        <details className="settings-menu">
-          <summary>Settings</summary>
-          <label><input type="checkbox" /> Reduce motion</label>
-          <label><input type="checkbox" /> Mute effects</label>
-        </details>
+        <div className="header-actions"><button type="button" onClick={() => setHelpOpen(true)}>Help</button><button type="button" onClick={onOpenSettings}>Settings</button></div>
         <span className={`save-status ${saveStatus}`} role="status">
           {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'conflict' ? 'Newer save found' : 'Save failed'}
         </span>
       </header>
+
+      {tutorialVisible && <aside className="tutorial-prompt" role="status"><strong>{level.id === '01' ? 'Watch the original delay first.' : level.id === '02' ? 'This time, change a departure beat.' : level.id === '03' ? 'A closure can make the shorter route slower.' : level.id === '07' ? 'Your plan now has two possible days.' : 'Compare all three possible days.'}</strong><button type="button" onClick={() => setTutorialVisible(false)}>Got it</button></aside>}
 
       <section className="goal-strip" aria-label="Puzzle goal">
         <div>
@@ -132,6 +204,7 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
           );
         })}
       </div>
+      <details className="scenario-details"><summary>Inspect this possible day</summary><p>{Object.keys(selectedScenario.starts).length === 0 ? 'Standard departure times.' : Object.entries(selectedScenario.starts).map(([actorId, beat]) => `${ACTOR_LABELS[actorId] ?? actorId} starts at beat ${beat}`).join('. ')} {Object.entries(selectedScenario.deadlines).map(([actorId, beat]) => `${ACTOR_LABELS[actorId] ?? actorId} deadline is beat ${beat}`).join('. ')} {Object.entries(selectedScenario.closures).map(([resourceId, closures]) => `${resourceId} closed ${closures.map(([start, end]) => `from beat ${start} until beat ${end}`).join(', ')}`).join('. ')}</p></details>
 
       <div className="play-layout">
         <section className="board-panel" aria-label="Harbor board">
@@ -146,6 +219,9 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
             >
               {UI_COPY.compareOriginal}
             </button>
+            <button type="button" onClick={() => setZoomIndex((value) => Math.max(0, value - 1))} disabled={zoomIndex === 0}>Zoom out</button>
+            <button type="button" onClick={() => setZoomIndex(1)} disabled={zoomIndex === 1}>Center</button>
+            <button type="button" onClick={() => setZoomIndex((value) => Math.min(ZOOM_LEVELS.length - 1, value + 1))} disabled={zoomIndex === ZOOM_LEVELS.length - 1}>Zoom in</button>
           </div>
           {showTextView ? (
             <div className="text-play-view">
@@ -177,8 +253,12 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
               </ol>
             </div>
           ) : (
-            <HarborScene level={level} plan={viewedPlan} result={viewedResult} eventIndex={eventIndex} />
+            <div className="scene-zoom" style={{ '--scene-zoom': ZOOM_LEVELS[zoomIndex] } as CSSProperties}><SceneBoundary onUseTextView={() => setShowTextView(true)}><Suspense fallback={<div className="scene-loading" role="status">Drawing the harbor...</div>}><HarborScene level={level} plan={viewedPlan} result={viewedResult} eventIndex={eventIndex} /></Suspense></SceneBoundary></div>
           )}
+          <div className="actor-inspection" aria-label="Vehicle details">
+            <div>{level.actors.map((actor) => <button key={actor.id} type="button" aria-pressed={selectedActor.id === actor.id} onClick={() => setSelectedActorId(actor.id)}>{ACTOR_LABELS[actor.id] ?? actor.id}</button>)}</div>
+            <p><strong>{ACTOR_LABELS[selectedActor.id] ?? selectedActor.id}</strong> starts at beat {selectedStart}, follows {ROUTE_LABELS[selectedRoute] ?? selectedRoute}, and needs to arrive by beat {selectedScenario.deadlines[selectedActor.id] ?? selectedActor.deadline}.</p>
+          </div>
           <div className="timeline-controls">
             <button type="button" onClick={() => setEventIndex((index) => Math.max(0, index - 1))} disabled={eventIndex === 0}>{UI_COPY.previousEvent}</button>
             <div aria-live="polite">
@@ -187,6 +267,7 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
             </div>
             <button type="button" onClick={() => setEventIndex((index) => Math.min(traversalEvents.length - 1, index + 1))} disabled={eventIndex >= traversalEvents.length - 1}>{UI_COPY.nextEvent}</button>
           </div>
+          <div className="playback-controls"><button type="button" onClick={() => setEventIndex(0)}>Rewind</button><button type="button" onClick={() => setPlaying((value) => !value)}>{playing ? 'Pause' : 'Resume'}</button><label>Speed<select value={speed} onChange={(event) => setSpeed(Number(event.target.value) as 0.5 | 1 | 2)}><option value="0.5">Half</option><option value="1">Normal</option><option value="2">Double</option></select></label><label className="timeline-slider">Time in beats<input type="range" min="0" max={Math.max(0, traversalEvents.length - 1)} value={eventIndex} onChange={(event) => { setPlaying(false); setEventIndex(Number(event.target.value)); }} aria-valuetext={activeEvent === undefined ? 'Start' : `Beat ${activeEvent.end}`} /></label></div>
         </section>
 
         <aside className="plan-panel" aria-label="Plan controls">
@@ -242,10 +323,14 @@ export function LevelScreen({ level, onComplete, onChapters, onNext, savedPlan, 
 
           <section className="hint-card">
             <button type="button" onClick={() => setHintIndex((index) => Math.min(2, index + 1))}>{UI_COPY.hint}</button>
-            {hintIndex >= 0 && <p>{content.hints[hintIndex]}</p>}
+            {hintIndex >= 0 && <p>{hintIndex === 2 ? specificHint : content.hints[hintIndex]}</p>}
+            {hintIndex === 2 && <button type="button" onClick={() => setRevealPending(true)}>Show the solution</button>}
+            {planState.recovery !== null && <button type="button" onClick={() => persistPlanState(restoreRecovery(level, planState))}>Restore my plan</button>}
           </section>
         </aside>
       </div>
+      <ModalDialog open={revealPending} labelledBy="reveal-title" onClose={() => setRevealPending(false)}><h2 id="reveal-title">Replace your plan with the solution?</h2><p>Your current plan will stay available as a recovery snapshot.</p><div><button className="primary-button" type="button" onClick={confirmReveal}>Show solution</button><button type="button" onClick={() => setRevealPending(false)}>Keep my plan</button></div></ModalDialog>
+      <ModalDialog open={helpOpen} labelledBy="help-title" className="help-dialog" onClose={() => setHelpOpen(false)}><h2 id="help-title">How this harbor works</h2><p>Time is measured in beats. Shared segments hold one vehicle at a time. Earlier arrivals stay first. If arrivals tie: bus, robot, cart.</p><p>Choose a route or start beat, then select Test plan. Later puzzles test the same plan across every possible day. Scrubbing only changes the event you are viewing.</p><p>Progress stays in this browser. Use Settings to export a backup.</p><button className="primary-button" type="button" onClick={() => setHelpOpen(false)}>Back to the puzzle</button></ModalDialog>
     </main>
   );
 }

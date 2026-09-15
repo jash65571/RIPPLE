@@ -1,0 +1,151 @@
+{
+  "id": "10",
+  "version": 1,
+  "budget": 2,
+  "actors": [
+    {
+      "id": "R",
+      "start": 0,
+      "deadline": 6,
+      "routes": {
+        "crossing": [
+          [
+            "X",
+            3
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "upper": [
+          [
+            "U",
+            2
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "garden": [
+          [
+            null,
+            5
+          ]
+        ]
+      },
+      "defaultRoute": "crossing",
+      "priority": 20
+    },
+    {
+      "id": "C",
+      "start": 0,
+      "deadline": 7,
+      "routes": {
+        "crossing": [
+          [
+            "Y",
+            4
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "upper": [
+          [
+            "U",
+            3
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "quay": [
+          [
+            null,
+            6
+          ]
+        ]
+      },
+      "defaultRoute": "crossing",
+      "priority": 30
+    },
+    {
+      "id": "B",
+      "start": 1,
+      "deadline": 4,
+      "routes": {
+        "main": [
+          [
+            "X",
+            1
+          ],
+          [
+            "Y",
+            1
+          ],
+          [
+            null,
+            1
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "R",
+      "field": "route",
+      "values": [
+        "crossing",
+        "upper",
+        "garden"
+      ]
+    },
+    {
+      "actor": "C",
+      "field": "route",
+      "values": [
+        "crossing",
+        "upper",
+        "quay"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "starts": {},
+      "deadlines": {},
+      "closures": {}
+    },
+    {
+      "id": "upper-closed",
+      "starts": {},
+      "deadlines": {},
+      "closures": {
+        "U": [
+          [
+            0,
+            4
+          ]
+        ]
+      }
+    },
+    {
+      "id": "early-bus",
+      "starts": {
+        "B": 0
+      },
+      "deadlines": {
+        "B": 3
+      },
+      "closures": {}
+    }
+  ]
+}

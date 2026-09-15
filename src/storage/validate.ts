@@ -3,6 +3,7 @@ import { campaign } from '../content/campaign';
 import type { Plan } from '../game/model';
 import { validatePlan } from '../game/validate';
 import {
+  DEFAULT_SETTINGS,
   GAME_RULE_VERSION,
   SAVE_LIMITS,
   SAVE_SCHEMA_VERSION,
@@ -22,6 +23,12 @@ const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const migrateSaveDocument = (value: unknown): unknown => {
+  if (!isRecord(value) || value.schemaVersion !== 0) return value;
+  const legacySettings = isRecord(value.settings) ? value.settings : {};
+  return { ...value, schemaVersion: SAVE_SCHEMA_VERSION, settings: { ...DEFAULT_SETTINGS, ...legacySettings } };
+};
 
 const assertNoDangerousKeys = (value: unknown, depth = 0): void => {
   if (depth > 12) throw new SaveValidationError('The save is nested too deeply.');
@@ -77,6 +84,7 @@ const parseSavedPlan = (value: unknown, levelId: string): SavedPlan => {
 
 export const parseSaveDocument = (value: unknown): SaveDocument => {
   assertNoDangerousKeys(value);
+  value = migrateSaveDocument(value);
   if (!isRecord(value)) throw new SaveValidationError('The save must be a JSON object.');
   if (value.productId !== PRODUCT.productId) throw new SaveValidationError('This save belongs to a different game.');
   if (value.schemaVersion !== SAVE_SCHEMA_VERSION) {

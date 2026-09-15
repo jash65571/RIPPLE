@@ -8,3 +8,9 @@
 - Validate the supplied campaign JSON at import time. Invalid content fails before a puzzle can render.
 - Keep the product name and public identity in one configuration module. Missing publisher and support values remain empty in review mode and must block a later public release check.
 - Draw all visible first-party scene objects with PixiJS primitives or CSS. Do not add first-party SVG assets.
+- Keep one PixiJS application alive while a level scene changes. Rebuilding it unloaded shared text textures and could blank the React root.
+- Generate sound with the Web Audio API so the game ships no sample library or licensed recording.
+- Generate service workers in the standalone web build, but disable them in the embedded itch.io build to avoid scope and update conflicts.
+- Require explicit update activation only after the current save reports as complete.
+- Use original PNG icons and real-game browser captures for public and marketing images.
+- Package the web and embedded builds separately with runtime license notices, manifests, and SHA-256 checksums.

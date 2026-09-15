@@ -124,6 +124,7 @@ p { color: var(--muted); line-height: 1.55; }
 .game-shell { min-height: 100vh; padding: 24px 0 48px; }
 .game-header { align-items: flex-start; }
 .game-header > div { text-align: center; }
+.header-actions { display: flex; gap: 8px; }
 .save-status { align-self: center; color: var(--muted); font-size: 0.78rem; font-weight: 750; }
 .save-status.failed, .save-status.conflict { color: var(--attention); }
 .settings-menu { position: relative; }
@@ -151,14 +152,18 @@ p { color: var(--muted); line-height: 1.55; }
 .scenario-tabs button { min-width: 145px; display: flex; flex-direction: column; align-items: flex-start; }
 .scenario-tabs button[aria-selected="true"] { border-color: var(--primary); background: #eef2ff; box-shadow: inset 0 -3px var(--primary); }
 .scenario-tabs small { color: var(--muted); font-weight: 600; }
+.scenario-details { width: min(1180px, calc(100% - 32px)); margin: 0 auto 12px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: white; }
+.scenario-details summary { min-height: 42px; padding: 8px; border: 0; }
+.scenario-details p { margin: 0 8px 12px; }
 
 .play-layout { width: min(1180px, calc(100% - 32px)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
 .board-panel, .plan-panel { border: 1px solid var(--border); border-radius: 20px; background: white; box-shadow: 0 8px 24px rgb(31 41 55 / 6%); }
 .board-panel { min-width: 0; overflow: hidden; }
-.board-toolbar { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
+.board-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
 .board-toolbar button { min-height: 42px; padding-block: 7px; }
 .harbor-scene { width: 100%; aspect-ratio: 7 / 8.2; max-height: 665px; overflow: hidden; background: #f7f8fc; }
 .harbor-scene canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+.scene-loading { width: 100%; aspect-ratio: 7 / 8.2; display: grid; place-items: center; color: var(--muted); background: #f7f8fc; }
 .text-play-view { height: min(66vh, 665px); min-height: 500px; padding: 24px; overflow: auto; }
 .text-play-view article { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .text-play-view h3 { margin-bottom: 5px; }
@@ -169,6 +174,11 @@ p { color: var(--muted); line-height: 1.55; }
 .timeline-controls > div { min-width: 110px; text-align: center; }
 .timeline-controls span { display: block; color: var(--muted); font-size: 0.75rem; }
 .timeline-controls strong { color: var(--primary); }
+.playback-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; border-top: 1px solid var(--border); }
+.playback-controls label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; }
+.playback-controls select, .settings-dialog select { min-height: 42px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 9px; background: white; }
+.timeline-slider { min-width: 190px; flex: 1; }
+.timeline-slider input { width: 100%; }
 
 .plan-panel { padding: 20px; }
 .plan-panel > h2 { margin-bottom: 18px; }
@@ -188,6 +198,44 @@ p { color: var(--muted); line-height: 1.55; }
 .success-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
 .hint-card { border: 1px dashed #b7c2d3; background: #f8fafc; }
 .hint-card button { min-height: 42px; }
+.hint-card button + button, .hint-card p + button { margin: 10px 8px 0 0; }
+.tutorial-prompt { position: sticky; z-index: 4; top: 8px; width: min(680px, calc(100% - 24px)); margin: 12px auto; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #a8b9e9; border-radius: 14px; background: #eef2ff; box-shadow: var(--shadow); }
+.tutorial-prompt button { min-height: 40px; }
+.confirm-dialog { width: min(520px, calc(100% - 32px)); padding: 24px; border: 0; border-radius: 20px; background: white; box-shadow: 0 25px 70px rgb(0 0 0 / 30%); }
+.confirm-dialog::backdrop { background: rgb(20 28 43 / 55%); }
+.confirm-dialog > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.help-dialog p { color: var(--muted); }
+.global-settings { position: fixed; z-index: 8; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); box-shadow: var(--shadow); }
+.pwa-notice { position: fixed; z-index: 10; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); width: min(520px, calc(100% - 24px)); transform: translateX(-50%); padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #8dcdb6; border-radius: 14px; background: #edf9f4; box-shadow: var(--shadow); font-weight: 700; }
+.embedded-notice { padding: 10px 16px; color: #713800; background: #fff7ed; text-align: center; font-weight: 700; }
+.settings-dialog { width: min(620px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 0; border-radius: 20px; color: var(--ink); box-shadow: 0 25px 80px rgb(0 0 0 / 30%); }
+.settings-dialog::backdrop { background: rgb(20 28 43 / 55%); }
+.settings-dialog section { padding: 18px 24px; border-top: 1px solid var(--border); }
+.settings-dialog section > label { min-height: 48px; display: flex; align-items: center; gap: 10px; }
+.settings-dialog section > label:has(select) { justify-content: space-between; }
+.dialog-heading { position: sticky; top: 0; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: white; }
+.dialog-heading h2 { margin: 0; }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.file-button { min-height: 48px; padding: 10px 16px; display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; }
+.file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.import-summary { margin-top: 12px; padding: 14px; border-radius: 12px; background: #eef2ff; }
+.import-summary button { margin-right: 8px; }
+.danger-zone button { color: #8c2f25; border-color: #dcaaa5; }
+.scene-zoom { overflow: auto; background: #f7f8fc; }
+.scene-zoom .harbor-scene { transform: scale(var(--scene-zoom)); transform-origin: top center; }
+.actor-inspection { padding: 12px; border-top: 1px solid var(--border); }
+.actor-inspection > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.actor-inspection button { min-height: 42px; }
+.actor-inspection button[aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: #eef2ff; }
+.actor-inspection p { margin: 10px 0 0; }
+.ending-screen { min-height: 100vh; padding: 12vh 24px; display: flex; flex-direction: column; align-items: center; text-align: center; background: linear-gradient(#f7f8fc 0 70%, #b9dfe5 70%); }
+.ending-screen h1 { max-width: 720px; font-size: clamp(3rem, 8vw, 6rem); }
+.ending-screen > p:not(.eyebrow) { max-width: 580px; font-size: 1.15rem; }
+.ending-screen > div:not(.ending-water) { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.ending-screen small { margin-top: 30px; color: var(--muted); }
+.ending-water { width: 170px; height: 110px; position: relative; margin-bottom: 30px; border-radius: 50%; background: #b9dfe5; }
+.ending-water span { position: absolute; left: 25px; right: 25px; height: 3px; border-radius: 3px; background: #5598a5; }
+.ending-water span:nth-child(1) { top: 33px; }.ending-water span:nth-child(2) { top: 54px; left: 45px; }.ending-water span:nth-child(3) { top: 76px; right: 45px; }
 
 .chapter-screen { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 70px; }
 .chapter-header { width: 100%; justify-content: flex-start; margin-bottom: 34px; }
@@ -222,6 +270,8 @@ p { color: var(--muted); line-height: 1.55; }
   .hero-scene { min-height: 360px; border-radius: 24px; }
   .how-strip { grid-template-columns: 1fr; }
   .game-header { align-items: center; gap: 8px; }
+  .game-header { flex-wrap: wrap; }
+  .game-header .save-status { flex: 0 0 100%; text-align: center; }
   .game-header .eyebrow { display: none; }
   .game-header h1 { font-size: 1.2rem; margin: 0; }
   .settings-menu summary, .game-header > button { min-height: 44px; padding: 7px 10px; }
@@ -234,6 +284,7 @@ p { color: var(--muted); line-height: 1.55; }
   .harbor-scene { max-height: 70vh; }
   .timeline-controls { grid-template-columns: 1fr 74px 1fr; }
   .timeline-controls button { padding-inline: 8px; font-size: 0.84rem; }
+  .board-toolbar button { flex: 1 1 120px; }
   .level-grid { grid-template-columns: 1fr; }
 }
 

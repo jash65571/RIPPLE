@@ -1,0 +1,88 @@
+{
+  "id": "05",
+  "version": 1,
+  "budget": 1,
+  "actors": [
+    {
+      "id": "R",
+      "start": 0,
+      "deadline": 6,
+      "routes": {
+        "main": [
+          [
+            "X",
+            3
+          ],
+          [
+            "Y",
+            2
+          ]
+        ],
+        "quick-crossing": [
+          [
+            "X",
+            1
+          ],
+          [
+            "Y",
+            4
+          ]
+        ],
+        "side-door": [
+          [
+            "X",
+            3
+          ],
+          [
+            null,
+            3
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 20
+    },
+    {
+      "id": "B",
+      "start": 1,
+      "deadline": 6,
+      "routes": {
+        "main": [
+          [
+            "X",
+            1
+          ],
+          [
+            "Y",
+            1
+          ],
+          [
+            null,
+            1
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "R",
+      "field": "route",
+      "values": [
+        "main",
+        "quick-crossing",
+        "side-door"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "starts": {},
+      "deadlines": {},
+      "closures": {}
+    }
+  ]
+}

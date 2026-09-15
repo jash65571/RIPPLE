@@ -50,6 +50,23 @@ describe('save repository', () => {
     expect(imported.plans['01']?.plan).toEqual({ 'R.route': 'garden' });
     repository.close();
   });
+
+  it('keeps the committed save when a later transaction is interrupted', async () => {
+    const repository = await SaveRepository.open();
+    const initial = await repository.load();
+    const saved = await repository.save({ ...initial, completedLevelIds: ['01'] }, initial.revision);
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(`${PRODUCT.productId}.saves`, 1);
+      request.addEventListener('success', () => resolve(request.result));
+      request.addEventListener('error', () => reject(request.error));
+    });
+    const transaction = database.transaction('state', 'readwrite');
+    transaction.objectStore('state').put({ id: 'active', document: { ...saved, completedLevelIds: ['02'] } });
+    transaction.abort();
+    expect((await repository.load()).completedLevelIds).toEqual(['01']);
+    database.close();
+    repository.close();
+  });
 });
 
 describe('save validation', () => {
@@ -80,5 +97,12 @@ describe('save validation', () => {
 
   it('rejects dangerous keys', () => {
     expect(() => parseSaveJson(`{"__proto__":{},"productId":"${PRODUCT.productId}"}`)).toThrow(/forbidden key/i);
+  });
+
+  it('migrates a legacy save with current defaults', () => {
+    const legacy = { ...valid(), schemaVersion: 0, settings: { effects: true, music: false, textScale: 1 } };
+    const migrated = parseSaveJson(JSON.stringify(legacy));
+    expect(migrated.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
+    expect(migrated.settings.reducedMotion).toBe(false);
   });
 });

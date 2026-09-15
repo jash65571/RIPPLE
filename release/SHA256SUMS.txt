@@ -1,0 +1,2 @@
+0a89088ad5b6b39337347615ec4d3f93ec3adc7ead9a16313ca9274a0183f774  ripple-web-v1.zip
+5089ca0ddef7ffa7f19bd79168ea5f6d1828e9c6799164dde30daccee916939f  ripple-itch-html5-v1.zip

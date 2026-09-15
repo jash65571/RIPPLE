@@ -13,8 +13,13 @@
     "test:e2e": "playwright test",
     "verify:levels": "tsx scripts/verify-levels.ts",
     "verify:content": "tsx scripts/verify-content.ts",
-    "verify:release": "npm run typecheck && npm run lint && npm run test && npm run verify:levels && npm run verify:content",
-    "package:release": "tsx scripts/package-release.ts"
+    "verify:public-config": "tsx scripts/verify-public-config.ts",
+    "generate:assets": "tsx scripts/generate-assets.ts",
+    "capture:marketing": "tsx scripts/capture-marketing.ts",
+    "verify:pwa-update": "tsx scripts/verify-pwa-update.ts",
+    "verify:release": "npm run typecheck && npm run lint && npm run test && npm run verify:levels && npm run verify:content && npm run verify:public-config",
+    "build:itch": "tsc -b && vite build --config vite.itch.config.ts",
+    "package:release": "npm run build && npm run build:itch && tsx scripts/package-release.ts"
   },
   "dependencies": {
     "pixi.js": "8.20.1",

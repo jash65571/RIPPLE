@@ -2,37 +2,40 @@
 
 Updated September 15, 2026.
 
-## Completed
+## Complete in the review build
 
-- Created the strict React, Vite, TypeScript, PixiJS, Vitest, ESLint, and Playwright project foundation.
-- Extracted and runtime-validated all ten campaign fixtures.
-- Implemented deterministic simulation, closures, FIFO reservations, simultaneous priority, dependency release, goal results, trace provenance, stable trace IDs, and bounded validation.
-- Implemented finite plan enumeration, budget calculation, undo, redo, branching, reset recovery, and solution recovery support.
-- Reproduced the supplied baseline and winning arrival maps for every scenario.
-- Built the first playable UI across all ten levels with chapter navigation, route and timing choices, multi-future tabs, plan testing, result copy, hints, timeline stepping, original-plan comparison, and structured text play.
-- Added ten distinct normalized harbor layouts and custom PixiJS primitive drawings for the bus, parcel robot, cart, resources, water, trees, market, bridge, depot, and pier.
-- Added responsive desktop and phone layouts plus visible keyboard focus and reduced-motion CSS.
-- Implemented IndexedDB saves with transactional commit reporting, bounded plan history, schema and product validation, import/export validation, pre-import recovery backup, and stale-tab conflict detection.
-- Wired plan edits, undo, redo, reset, and level completion into serialized browser saves.
-- Added automated first-party copy and SVG provenance gates.
+- Ten immutable, versioned level files validate against the deterministic engine and each has one intended solution.
+- The full campaign is playable from intro through ending with visible route and timing controls.
+- Timeline playback, rewind, pause, speed, stepping, scrubbing, original comparison, actor inspection, zoom, and structured text play are implemented.
+- Hints, guarded solution reveal, reset recovery, reveal recovery, undo, redo, chapter navigation, and multiple futures are implemented.
+- IndexedDB progress includes serialized writes, version checks, migration, bounded history, import, export, stale-tab protection, and transaction interruption coverage.
+- PWA metadata, original PNG icons, full offline precache, explicit offline-ready notice, and user-controlled update activation are implemented.
+- Keyboard operation, native modal focus containment, visible focus, large touch targets, text sizing, reduced motion, and optional sound are implemented.
+- Public information pages, review policy drafts, operations notes, data inventory, license register, owner checklist, marketing kit, screenshots, promo images, trailers, and release packages are present.
+- Web and embedded itch.io packages use separate path and service-worker behavior.
+- First-party verification rejects em dashes, en dashes, and SVG artwork.
 
-## Checks
+## Current verification
 
-- `npm install`: passed, 471 packages installed, 0 vulnerabilities reported.
-- `npm run typecheck`: passed with no output.
-- `npm run lint`: passed with no output.
-- `npm test`: passed, 4 files and 31 tests.
-- `npm run verify:levels`: passed, 10 levels and 36 plan combinations, exactly one solution per level.
-- `npm run verify:content`: passed, 24 text files checked, no prohibited dash characters or first-party SVG assets.
+- TypeScript: passed.
+- ESLint: passed.
+- Vitest: 4 files and 33 tests passed.
+- Level verifier: 10 levels, 36 allowed plans, and one solution per level passed.
+- Content verifier: 72 first-party text files passed with no prohibited dashes or first-party SVG artwork.
+- Production web and embedded builds: passed.
+- Chromium browser suite: 12 stories passed in 46.0 seconds, including all ten levels, the returning-player landing state, and both target layouts.
+- PWA A/B cycle: update prompt, controlled activation, reload, and save retention passed.
+- Chromium desktop screenshot run: all ten levels passed without horizontal overflow.
+- Offline, recovery, multiple futures, keyboard, stale-tab, local-only network, and import/export browser checks are included in the final suite.
+- Dependency audit: production and complete dependency trees both reported zero vulnerabilities.
+- Marketing captures: three purpose-specific gameplay stills, square, portrait, and wide promos, plus captioned 15.04-second and 30.04-second WebM sources passed visual review.
 
-## Not yet complete
+## Owner and environment blockers
 
-- Save settings UI, import/export UI, schema migration fixtures, and interrupted-write browser coverage.
-- Playback timing, sound, tutorial progression, solution reveal dialog, and campaign ending treatment.
-- PWA manifest, service worker, install/update flow, and offline tests.
-- Static public pages, policy drafts, marketing assets, release archives, and launch verification.
-- Browser and screenshot inspection. Repository rules reserve starting Vite or asset builds for the owner, so no browser server was started here.
+- RIPPLE is a working name with existing games using the same name. Final naming and trademark clearance are required.
+- Publisher name, support route, production URL, governing terms details, and legal approval are missing.
+- Physical iOS and Android acceptance, store accounts, listing forms, age ratings, and privacy labels require owner access.
+- Playwright Firefox and WebKit downloads timed out across available mirrors, so those engine runs require another network or machine.
+- Hosted headers, public URLs, social previews, and production service-worker behavior can be checked only after a private deployment exists.
 
-## Next task
-
-Implement the IndexedDB save boundary and persist plan history, settings, and campaign completion with import/export validation.
+No public deployment, purchase, outreach, commit, or push was performed.

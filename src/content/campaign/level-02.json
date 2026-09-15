@@ -1,0 +1,64 @@
+{
+  "id": "02",
+  "version": 1,
+  "budget": 1,
+  "actors": [
+    {
+      "id": "R",
+      "start": 0,
+      "deadline": 6,
+      "routes": {
+        "main": [
+          [
+            "X",
+            2
+          ],
+          [
+            null,
+            1
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 20
+    },
+    {
+      "id": "B",
+      "start": 1,
+      "deadline": 4,
+      "routes": {
+        "main": [
+          [
+            "X",
+            2
+          ],
+          [
+            null,
+            1
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "R",
+      "field": "start",
+      "values": [
+        0,
+        2,
+        4
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "starts": {},
+      "deadlines": {},
+      "closures": {}
+    }
+  ]
+}

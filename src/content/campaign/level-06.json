@@ -1,0 +1,106 @@
+{
+  "id": "06",
+  "version": 1,
+  "budget": 2,
+  "actors": [
+    {
+      "id": "R",
+      "start": 0,
+      "deadline": 8,
+      "routes": {
+        "main": [
+          [
+            "X",
+            3
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "garden": [
+          [
+            null,
+            4
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 20
+    },
+    {
+      "id": "C",
+      "start": 0,
+      "deadline": 8,
+      "routes": {
+        "main": [
+          [
+            "Y",
+            5
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "quay": [
+          [
+            null,
+            6
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 30
+    },
+    {
+      "id": "B",
+      "start": 1,
+      "deadline": 4,
+      "routes": {
+        "main": [
+          [
+            "X",
+            1
+          ],
+          [
+            "Y",
+            1
+          ],
+          [
+            null,
+            1
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "R",
+      "field": "route",
+      "values": [
+        "main",
+        "garden"
+      ]
+    },
+    {
+      "actor": "C",
+      "field": "route",
+      "values": [
+        "main",
+        "quay"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "starts": {},
+      "deadlines": {},
+      "closures": {}
+    }
+  ]
+}

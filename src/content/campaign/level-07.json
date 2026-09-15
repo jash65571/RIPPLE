@@ -1,0 +1,86 @@
+{
+  "id": "07",
+  "version": 1,
+  "budget": 1,
+  "actors": [
+    {
+      "id": "R",
+      "start": 0,
+      "deadline": 5,
+      "routes": {
+        "crossing": [
+          [
+            "X",
+            3
+          ],
+          [
+            null,
+            1
+          ]
+        ],
+        "garden": [
+          [
+            null,
+            4
+          ]
+        ],
+        "scenic": [
+          [
+            null,
+            6
+          ]
+        ]
+      },
+      "defaultRoute": "crossing",
+      "priority": 20
+    },
+    {
+      "id": "B",
+      "start": 1,
+      "deadline": 5,
+      "routes": {
+        "main": [
+          [
+            "X",
+            2
+          ],
+          [
+            null,
+            2
+          ]
+        ]
+      },
+      "defaultRoute": "main",
+      "priority": 10
+    }
+  ],
+  "edits": [
+    {
+      "actor": "R",
+      "field": "route",
+      "values": [
+        "crossing",
+        "garden",
+        "scenic"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "normal",
+      "starts": {},
+      "deadlines": {},
+      "closures": {}
+    },
+    {
+      "id": "early-bus",
+      "starts": {
+        "B": 0
+      },
+      "deadlines": {
+        "B": 4
+      },
+      "closures": {}
+    }
+  ]
+}

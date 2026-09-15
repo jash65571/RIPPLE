@@ -1,11 +1,11 @@
 export const PRODUCT = {
   name: 'RIPPLE',
   productId: 'com.jash.ripple',
-  releaseMode: 'review',
+  releaseMode: 'review' as 'review' | 'public',
   version: '1.0.0',
-  supportContact: '',
-  publisherName: '',
-  productionUrl: '',
+  supportContact: '' as string,
+  publisherName: '' as string,
+  productionUrl: '' as string,
 } as const;
 
 export const UI_COPY = {
