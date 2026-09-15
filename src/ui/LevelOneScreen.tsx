@@ -50,6 +50,8 @@ export function LevelOneScreen({
   onTutorialProgress,
   offlineReady,
   onDismissOffline,
+  updateReady,
+  onUpdate,
   settings,
   onOpenSettings,
 }: LevelScreenProps) {
@@ -252,6 +254,7 @@ export function LevelOneScreen({
           <button type="button" onClick={() => { setMenuOpen(false); setBottomSheet('advanced'); }}>Inspect playback</button>
           <button type="button" onClick={() => { setMenuOpen(false); setRunOutcome('none'); setShowOriginal(false); setTimelineBeat(0); setTutorialStep(TUTORIAL_STEP.goal); }}>Replay tutorial</button>
           {offlineReady && <button type="button" onClick={onDismissOffline}>Offline ready</button>}
+          {updateReady && <button type="button" disabled={saveStatus !== 'saved'} onClick={onUpdate}>Update now</button>}
           <span className={`save-status ${saveStatus}`} role="status">{saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'conflict' ? 'Newer save found' : 'Save failed'}</span>
         </section>
       )}
@@ -276,27 +279,27 @@ export function LevelOneScreen({
         </SceneBoundary>
 
         {tutorialActive && tutorialStep !== TUTORIAL_STEP.choose && tutorialStep !== TUTORIAL_STEP.run && (
-          <aside className="touch-coach" role="status">
+          <aside className={`touch-coach tutorial-step-${tutorialStep}`} role="status">
             <p>{tutorialStep === TUTORIAL_STEP.goal
-              ? 'The red and yellow markers are the two stops. Press Go to watch the traffic.'
+              ? 'Press Go to watch the morning traffic.'
               : tutorialStep === TUTORIAL_STEP.delay
-                ? 'The robot takes the crossing first. The bus has to wait. Tap the robot.'
-                : 'The route is highlighted. Press Go to try your choice.'}</p>
+                ? 'The bus waits at the market crossing. Tap the coral robot.'
+                : 'Your route is ready. Press Go.'}</p>
             <button type="button" onClick={() => advanceTutorial(TUTORIAL_STEP.complete)}>Skip tutorial</button>
           </aside>
         )}
 
         {runOutcome !== 'none' && (
-          <aside className={`touch-result-callout ${runOutcome}`} role="status">
+          <aside className={`touch-result-callout ${runOutcome}`} role="status" aria-live="polite">
             <span className={`vehicle-swatch vehicle-${selectedActorId.toLowerCase()}`} aria-hidden="true" />
             <p>{runOutcome === 'passed'
               ? 'Both vehicles reached their stops on time.'
-              : 'The bus reached its stop too late. The crossing kept it waiting.'}</p>
+              : 'The yellow bus was late at the market crossing.'}</p>
           </aside>
         )}
 
         {!sheetOpen && playbackMode === 'idle' && runOutcome === 'none' && tutorialStep !== TUTORIAL_STEP.delay && (
-          <button className="labeled-vehicle-select" type="button" onClick={() => setBottomSheet('vehicles')}>Select vehicle</button>
+          <button className="labeled-vehicle-select" type="button" onClick={() => setBottomSheet('vehicles')}>Choose vehicle</button>
         )}
 
         {bottomSheet === 'vehicles' && (
@@ -308,10 +311,12 @@ export function LevelOneScreen({
 
         {bottomSheet === 'robot' && (
           <section className="touch-bottom-sheet route-sheet" aria-label="Parcel robot routes">
-            <div className="sheet-heading"><div><p className="eyebrow">Parcel robot</p><h2>Choose a route</h2></div><button type="button" onClick={() => setBottomSheet('none')}>Close</button></div>
-            {tutorialStep === TUTORIAL_STEP.choose && <p className="sheet-instruction">Choose either route. Watch the highlighted line change on the harbor.</p>}
+            <div className="sheet-heading"><div><p className="sheet-kicker">Coral robot</p><h2>Choose a route</h2></div><button type="button" onClick={() => setBottomSheet('none')}>Close</button></div>
             <div className="touch-choice-grid">
-              {['crossing', 'garden'].map((routeId) => <button key={routeId} type="button" className={selectedRoute === routeId ? 'selected-choice' : ''} aria-pressed={selectedRoute === routeId} onClick={() => editRobotRoute(routeId)}>{ROUTE_LABELS[routeId] ?? routeId}</button>)}
+              {['crossing', 'garden'].map((routeId) => {
+                const selected = selectedRoute === routeId;
+                return <button key={routeId} type="button" className={selected ? 'selected-choice' : ''} aria-pressed={selected} onClick={() => editRobotRoute(routeId)}><span>{ROUTE_LABELS[routeId] ?? routeId}</span>{selected && <small>Selected</small>}</button>;
+              })}
             </div>
           </section>
         )}
@@ -340,7 +345,9 @@ export function LevelOneScreen({
 
       <footer className="touch-action-bar">
         {planState.undo.length > 0 && runOutcome === 'none' && !playing && <button className="touch-undo" type="button" onClick={() => { savePlanState(undoPlanEdit(planState)); setRunOutcome('none'); setTimelineBeat(0); }}>Undo</button>}
-        <button className="touch-primary" type="button" disabled={tutorialStep === TUTORIAL_STEP.choose} onClick={primaryAction}>{primaryLabel}</button>
+        {tutorialStep === TUTORIAL_STEP.choose
+          ? <p className="touch-action-hint">Choose the robot route above.</p>
+          : <button className="touch-primary" type="button" onClick={primaryAction}>{primaryLabel}</button>}
       </footer>
     </main>
   );

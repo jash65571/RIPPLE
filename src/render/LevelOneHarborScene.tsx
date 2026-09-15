@@ -21,212 +21,535 @@ interface ActorVisual {
   readonly root: THREE.Group;
   readonly selection: THREE.Mesh;
   readonly waitSignal: THREE.Mesh;
+  readonly arrivalSignal: THREE.Mesh;
 }
 
-const SCENE_COLORS = {
-  water: 0x7bb8b7,
-  waterDeep: 0x3c777d,
-  stone: 0xe1c9aa,
-  stoneSide: 0xb9916b,
-  road: 0x52636c,
-  roadEdge: 0xe6d8bd,
-  dock: 0x98684c,
-  bus: 0xefac3f,
-  robot: 0xe85c4b,
-  robotLight: 0xffd799,
-  roofBlue: 0x3b7280,
-  roofRed: 0xb85345,
-  foliage: 0x547b5a,
-  foliageLight: 0x7f9b66,
-  window: 0xb9e4df,
-  crossing: 0xf2c564,
-  ink: 0x27383d,
-  white: 0xfff8e9,
+interface ActorFrameState {
+  readonly position: THREE.Vector3;
+  readonly tangent: THREE.Vector3;
+  waiting: boolean;
+  arrived: boolean;
+}
+
+interface SceneMaterials {
+  readonly water: THREE.MeshStandardMaterial;
+  readonly shallowWater: THREE.MeshStandardMaterial;
+  readonly shoreline: THREE.MeshStandardMaterial;
+  readonly limestone: THREE.MeshStandardMaterial;
+  readonly pavingA: THREE.MeshStandardMaterial;
+  readonly pavingB: THREE.MeshStandardMaterial;
+  readonly road: THREE.MeshStandardMaterial;
+  readonly roadEdge: THREE.MeshStandardMaterial;
+  readonly gardenPath: THREE.MeshStandardMaterial;
+  readonly lawn: THREE.MeshStandardMaterial;
+  readonly lawnLight: THREE.MeshStandardMaterial;
+  readonly gardenDark: THREE.MeshStandardMaterial;
+  readonly timber: THREE.MeshStandardMaterial;
+  readonly timberDark: THREE.MeshStandardMaterial;
+  readonly plaster: THREE.MeshStandardMaterial;
+  readonly plasterWarm: THREE.MeshStandardMaterial;
+  readonly plasterCoral: THREE.MeshStandardMaterial;
+  readonly roofTeal: THREE.MeshStandardMaterial;
+  readonly roofCoral: THREE.MeshStandardMaterial;
+  readonly glass: THREE.MeshStandardMaterial;
+  readonly glassDark: THREE.MeshStandardMaterial;
+  readonly ink: THREE.MeshStandardMaterial;
+  readonly bus: THREE.MeshStandardMaterial;
+  readonly robot: THREE.MeshStandardMaterial;
+  readonly cream: THREE.MeshStandardMaterial;
+  readonly brass: THREE.MeshStandardMaterial;
+}
+
+const COLORS = {
+  water: 0x4a9da0,
+  waterDeep: 0x2f7e83,
+  waterHighlight: 0xa9dbcf,
+  shoreline: 0xb99461,
+  limestone: 0xe9d3a6,
+  pavingA: 0xd9c18e,
+  pavingB: 0xe3cca0,
+  road: 0x465d61,
+  roadEdge: 0xb8b39b,
+  gardenPath: 0x758278,
+  lawn: 0x76915b,
+  lawnLight: 0x8da66a,
+  gardenDark: 0x4f7049,
+  timber: 0x9a6542,
+  timberDark: 0x5f4234,
+  plaster: 0xf2e5c2,
+  plasterWarm: 0xe5c78f,
+  plasterCoral: 0xd86a54,
+  roofTeal: 0x3f7775,
+  roofCoral: 0xa94f43,
+  glass: 0x91c8c2,
+  glassDark: 0x294c50,
+  ink: 0x203a3a,
+  bus: 0xe9a92f,
+  robot: 0xd95648,
+  cream: 0xfff4d8,
+  brass: 0xf2c55c,
 } as const;
 
-const CAMERA_FRUSTUM = 23;
-const MIN_HORIZONTAL_FRUSTUM = 24;
-const VEHICLE_HEIGHT = 1.18;
-const WATER_VERTEX_MOTION = 0.08;
-const CAMERA_POSITION = new THREE.Vector3(20, 20, 23);
-const CAMERA_TARGET = new THREE.Vector3(0, 0.2, 0);
+const ROAD_SURFACE_Y = 1.02;
+const VEHICLE_HEIGHT = 1.05;
+const CAMERA_FRUSTUM = 22;
+const MIN_HORIZONTAL_FRUSTUM = 21.2;
+const WATER_VERTEX_MOTION = 0.055;
+const CAMERA_POSITION = new THREE.Vector3(18, 30, 24);
+const CAMERA_TARGET = new THREE.Vector3(0, 0.6, 0);
 
 const STARTS = {
-  R: new THREE.Vector3(-8.2, VEHICLE_HEIGHT, -2.5),
-  B: new THREE.Vector3(-7.4, VEHICLE_HEIGHT, 5.4),
+  R: new THREE.Vector3(-5.6, VEHICLE_HEIGHT, -7.15),
+  B: new THREE.Vector3(-5.5, VEHICLE_HEIGHT, 6.85),
 } as const;
 
 const ENDS = {
-  R: new THREE.Vector3(7.4, VEHICLE_HEIGHT, 3.7),
-  B: new THREE.Vector3(7.8, VEHICLE_HEIGHT, -3.9),
+  R: new THREE.Vector3(5.45, VEHICLE_HEIGHT, 6.85),
+  B: new THREE.Vector3(5.6, VEHICLE_HEIGHT, -6.75),
 } as const;
 
-const CROSSING = new THREE.Vector3(0.15, VEHICLE_HEIGHT + 0.24, 0.15);
+const CROSSING = new THREE.Vector3(0, VEHICLE_HEIGHT, 0);
 
-const material = (color: number, roughness = 0.78, metalness = 0): THREE.MeshStandardMaterial =>
+const GARDEN_TUFTS = [
+  [-5.9, -4.7], [-4.9, -5.7], [-3.8, -4.4], [-2.8, -5.5], [-1.5, -4.5],
+  [0.1, -5.6], [1.4, -4.45], [2.6, -5.35], [3.8, -4.2], [4.7, -3.15],
+] as const;
+
+const TREE_SPECS = [
+  [-6.3, 2.8, 0.82], [-5.5, -3.15, 0.7], [-2.3, -4.2, 0.78],
+  [2.4, -4.15, 0.68], [6.3, -2.2, 0.62], [5.9, 4.1, 0.58],
+] as const;
+
+const BUOY_SPECS = [[-8.6, 8.8], [2.8, 11.4], [8.7, -1.8], [-7.9, -9.2]] as const;
+
+const standardMaterial = (color: number, roughness: number, metalness = 0): THREE.MeshStandardMaterial =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
+
+const createMaterials = (): SceneMaterials => ({
+  water: new THREE.MeshStandardMaterial({ color: COLORS.water, roughness: 0.42, metalness: 0.03, vertexColors: true }),
+  shallowWater: new THREE.MeshStandardMaterial({ color: COLORS.waterHighlight, roughness: 0.55, transparent: true, opacity: 0.34, depthWrite: false }),
+  shoreline: standardMaterial(COLORS.shoreline, 0.92),
+  limestone: standardMaterial(COLORS.limestone, 0.9),
+  pavingA: standardMaterial(COLORS.pavingA, 0.88),
+  pavingB: standardMaterial(COLORS.pavingB, 0.9),
+  road: standardMaterial(COLORS.road, 0.9),
+  roadEdge: standardMaterial(COLORS.roadEdge, 0.94),
+  gardenPath: standardMaterial(COLORS.gardenPath, 0.96),
+  lawn: standardMaterial(COLORS.lawn, 1),
+  lawnLight: standardMaterial(COLORS.lawnLight, 1),
+  gardenDark: standardMaterial(COLORS.gardenDark, 1),
+  timber: standardMaterial(COLORS.timber, 0.86),
+  timberDark: standardMaterial(COLORS.timberDark, 0.92),
+  plaster: standardMaterial(COLORS.plaster, 0.9),
+  plasterWarm: standardMaterial(COLORS.plasterWarm, 0.9),
+  plasterCoral: standardMaterial(COLORS.plasterCoral, 0.86),
+  roofTeal: standardMaterial(COLORS.roofTeal, 0.8),
+  roofCoral: standardMaterial(COLORS.roofCoral, 0.82),
+  glass: standardMaterial(COLORS.glass, 0.32, 0.04),
+  glassDark: standardMaterial(COLORS.glassDark, 0.46),
+  ink: standardMaterial(COLORS.ink, 0.82),
+  bus: standardMaterial(COLORS.bus, 0.7),
+  robot: standardMaterial(COLORS.robot, 0.72),
+  cream: standardMaterial(COLORS.cream, 0.86),
+  brass: standardMaterial(COLORS.brass, 0.58, 0.08),
+});
 
 const roundedBox = (
   size: readonly [number, number, number],
-  color: number,
-  radius = 0.18,
+  surface: THREE.Material,
+  radius = 0.16,
   segments = 3,
 ): THREE.Mesh => {
-  const mesh = new THREE.Mesh(
-    new RoundedBoxGeometry(size[0], size[1], size[2], segments, radius),
-    material(color),
-  );
+  const mesh = new THREE.Mesh(new RoundedBoxGeometry(size[0], size[1], size[2], segments, radius), surface);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
 };
 
-const addRoadSegment = (
-  parent: THREE.Object3D,
-  start: THREE.Vector3,
-  end: THREE.Vector3,
+const routeCurves = (routeId: string): Readonly<Record<string, readonly THREE.CatmullRomCurve3[]>> => ({
+  R: routeId === 'garden'
+    ? [new THREE.CatmullRomCurve3([
+        STARTS.R,
+        new THREE.Vector3(-4.7, VEHICLE_HEIGHT, -8.05),
+        new THREE.Vector3(-1.1, VEHICLE_HEIGHT, -8.45),
+        new THREE.Vector3(3.6, VEHICLE_HEIGHT, -7.45),
+        new THREE.Vector3(6.4, VEHICLE_HEIGHT, -3.8),
+        new THREE.Vector3(6.35, VEHICLE_HEIGHT, 2.7),
+        ENDS.R,
+      ])]
+    : [
+        new THREE.CatmullRomCurve3([STARTS.R, new THREE.Vector3(-4.5, VEHICLE_HEIGHT, -4.7), new THREE.Vector3(-2.35, VEHICLE_HEIGHT, -1.85), CROSSING]),
+        new THREE.CatmullRomCurve3([CROSSING, new THREE.Vector3(2.2, VEHICLE_HEIGHT, 2.05), new THREE.Vector3(4.45, VEHICLE_HEIGHT, 4.65), ENDS.R]),
+      ],
+  B: [
+    new THREE.CatmullRomCurve3([STARTS.B, new THREE.Vector3(-4.3, VEHICLE_HEIGHT, 4.4), new THREE.Vector3(-2.25, VEHICLE_HEIGHT, 1.7), CROSSING]),
+    new THREE.CatmullRomCurve3([CROSSING, new THREE.Vector3(2.3, VEHICLE_HEIGHT, -2), new THREE.Vector3(4.5, VEHICLE_HEIGHT, -4.65), ENDS.B]),
+  ],
+});
+
+const ROUTE_CURVES = {
+  crossing: routeCurves('crossing'),
+  garden: routeCurves('garden'),
+} as const;
+
+const sampleCurves = (curves: readonly THREE.CatmullRomCurve3[], divisions = 28): THREE.Vector3[] => {
+  const points: THREE.Vector3[] = [];
+  curves.forEach((curve, curveIndex) => {
+    curve.getPoints(divisions).forEach((point, pointIndex) => {
+      if (curveIndex > 0 && pointIndex === 0) return;
+      points.push(point);
+    });
+  });
+  return points;
+};
+
+const createRibbon = (
+  curves: readonly THREE.CatmullRomCurve3[],
   width: number,
-  color: number = SCENE_COLORS.road,
-  height = 0.38,
+  y: number,
+  surface: THREE.Material,
+): THREE.Mesh => {
+  const points = sampleCurves(curves);
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  points.forEach((point, index) => {
+    const previous = points[Math.max(0, index - 1)]!;
+    const next = points[Math.min(points.length - 1, index + 1)]!;
+    const direction = new THREE.Vector2(next.x - previous.x, next.z - previous.z).normalize();
+    const normalX = -direction.y * width / 2;
+    const normalZ = direction.x * width / 2;
+    positions.push(point.x + normalX, y, point.z + normalZ, point.x - normalX, y, point.z - normalZ);
+    uvs.push(0, index / (points.length - 1), 1, index / (points.length - 1));
+    if (index < points.length - 1) {
+      const offset = index * 2;
+      indices.push(offset, offset + 2, offset + 1, offset + 2, offset + 3, offset + 1);
+    }
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const ribbon = new THREE.Mesh(geometry, surface);
+  ribbon.receiveShadow = true;
+  return ribbon;
+};
+
+const addRoad = (
+  parent: THREE.Object3D,
+  curves: readonly THREE.CatmullRomCurve3[],
+  width: number,
+  materials: SceneMaterials,
+  garden = false,
 ): void => {
-  const length = start.distanceTo(end);
-  const road = roundedBox([length, height, width], color, Math.min(0.28, width * 0.1));
-  road.position.set((start.x + end.x) / 2, 0.82, (start.z + end.z) / 2);
-  road.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
-  parent.add(road);
+  parent.add(
+    createRibbon(curves, width + 0.48, ROAD_SURFACE_Y - 0.055, materials.roadEdge),
+    createRibbon(curves, width, ROAD_SURFACE_Y, garden ? materials.gardenPath : materials.road),
+  );
+};
+
+const addPavingArea = (
+  parent: THREE.Object3D,
+  materials: SceneMaterials,
+  centerX: number,
+  centerZ: number,
+  columns: number,
+  rows: number,
+  size = 1.3,
+): void => {
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const slab = roundedBox([size - 0.08, 0.12, size - 0.08], (row + column) % 3 === 0 ? materials.pavingB : materials.pavingA, 0.06, 2);
+      slab.position.set(centerX + (column - (columns - 1) / 2) * size, 0.98, centerZ + (row - (rows - 1) / 2) * size);
+      slab.castShadow = false;
+      parent.add(slab);
+    }
+  }
+};
+
+const addLawnBed = (
+  parent: THREE.Object3D,
+  materials: SceneMaterials,
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+  rotation = 0,
+): void => {
+  const border = roundedBox([width + 0.34, 0.18, depth + 0.34], materials.limestone, 0.35, 4);
+  border.position.set(x, 0.98, z);
+  border.rotation.y = rotation;
+  const lawn = roundedBox([width, 0.17, depth], materials.lawn, 0.3, 4);
+  lawn.position.set(x, 1.075, z);
+  lawn.rotation.y = rotation;
+  const variation = roundedBox([width * 0.44, 0.035, depth * 0.38], materials.lawnLight, 0.22, 3);
+  variation.position.set(x - width * 0.18, 1.17, z + depth * 0.12);
+  variation.rotation.y = rotation;
+  variation.castShadow = false;
+  parent.add(border, lawn, variation);
+};
+
+const addGardenTufts = (parent: THREE.Object3D, materials: SceneMaterials): void => {
+  const geometry = new THREE.ConeGeometry(0.12, 0.55, 5);
+  const tufts = new THREE.InstancedMesh(geometry, materials.gardenDark, GARDEN_TUFTS.length * 3);
+  const matrix = new THREE.Matrix4();
+  let index = 0;
+  for (const [x, z] of GARDEN_TUFTS) {
+    for (const [offsetX, offsetZ, angle] of [[-0.13, 0, -0.22], [0.12, -0.04, 0.18], [0, 0.13, 0]] as const) {
+      matrix.compose(
+        new THREE.Vector3(x + offsetX, 1.43, z + offsetZ),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(angle, index * 0.41, angle * 0.5)),
+        new THREE.Vector3(1, 1, 0.62),
+      );
+      tufts.setMatrixAt(index, matrix);
+      index += 1;
+    }
+  }
+  tufts.castShadow = true;
+  parent.add(tufts);
+};
+
+const addTree = (parent: THREE.Object3D, materials: SceneMaterials, x: number, z: number, scale: number): void => {
+  const tree = new THREE.Group();
+  tree.position.set(x, 1.02, z);
+  tree.scale.setScalar(scale);
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.17, 0.92, 8), materials.timberDark);
+  trunk.position.y = 0.44;
+  trunk.castShadow = true;
+  tree.add(trunk);
+  const canopies = [[0, 1.25, 0, 0.62], [-0.28, 1.08, 0.08, 0.46], [0.25, 1.1, -0.05, 0.5]] as const;
+  canopies.forEach(([offsetX, offsetY, offsetZ, radius], index) => {
+    const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(radius, 1), index === 0 ? materials.gardenDark : materials.lawn);
+    crown.position.set(offsetX, offsetY, offsetZ);
+    crown.scale.y = 1.08;
+    crown.castShadow = true;
+    tree.add(crown);
+  });
+  parent.add(tree);
 };
 
 const addBuilding = (
   parent: THREE.Object3D,
+  materials: SceneMaterials,
   x: number,
   z: number,
   width: number,
   depth: number,
   height: number,
-  wallColor: number,
-  roofColor: number,
+  wall: THREE.MeshStandardMaterial,
+  roof: THREE.MeshStandardMaterial,
+  front: 1 | -1,
+  awning = false,
 ): void => {
   const building = new THREE.Group();
   building.position.set(x, 0, z);
-  const body = roundedBox([width, height, depth], wallColor, 0.22);
-  body.position.y = 1 + height / 2;
-  const roof = roundedBox([width + 0.28, 0.34, depth + 0.28], roofColor, 0.16);
-  roof.position.y = 1.18 + height;
-  building.add(body, roof);
+  const foundation = roundedBox([width + 0.24, 0.32, depth + 0.24], materials.shoreline, 0.15);
+  foundation.position.y = 1.02;
+  const body = roundedBox([width, height, depth], wall, 0.2, 4);
+  body.position.y = 1.18 + height / 2;
+  const roofEdge = roundedBox([width + 0.48, 0.24, depth + 0.48], materials.cream, 0.12, 3);
+  roofEdge.position.y = 1.22 + height;
+  const roofCap = roundedBox([width + 0.28, 0.38, depth + 0.28], roof, 0.14, 3);
+  roofCap.position.y = 1.46 + height;
+  building.add(foundation, body, roofEdge, roofCap);
 
-  const windowMaterial = material(SCENE_COLORS.window, 0.25, 0.05);
-  const front = z > 0 ? -1 : 1;
-  for (const offset of [-0.28, 0.28]) {
-    const windowMesh = new THREE.Mesh(new RoundedBoxGeometry(width * 0.25, height * 0.22, 0.08, 2, 0.06), windowMaterial);
-    windowMesh.position.set(offset * width, 1 + height * 0.58, front * (depth / 2 + 0.04));
-    building.add(windowMesh);
+  const facadeZ = front * (depth / 2 + 0.035);
+  const doorFrame = roundedBox([0.92, 1.68, 0.1], materials.cream, 0.1, 2);
+  doorFrame.position.set(-width * 0.22, 1.92, facadeZ);
+  const door = roundedBox([0.67, 1.46, 0.08], materials.glassDark, 0.08, 2);
+  door.position.set(-width * 0.22, 1.88, front * (depth / 2 + 0.095));
+  const handle = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), materials.brass);
+  handle.position.set(-width * 0.06, 1.9, front * (depth / 2 + 0.16));
+  building.add(doorFrame, door, handle);
+
+  const offsetX = width * 0.23;
+  const recess = roundedBox([0.92, 0.9, 0.1], materials.glassDark, 0.1, 2);
+  recess.position.set(offsetX, 2.35, facadeZ);
+  const glass = roundedBox([0.7, 0.68, 0.07], materials.glass, 0.07, 2);
+  glass.position.set(offsetX, 2.35, front * (depth / 2 + 0.095));
+  const sill = roundedBox([1.02, 0.13, 0.24], materials.cream, 0.05, 2);
+  sill.position.set(offsetX, 1.87, front * (depth / 2 + 0.15));
+  building.add(recess, glass, sill);
+
+  if (awning) {
+    const awningTop = roundedBox([1.65, 0.16, 0.62], materials.roofCoral, 0.06, 2);
+    awningTop.position.set(-width * 0.02, 3.0, front * (depth / 2 + 0.36));
+    awningTop.rotation.x = front * -0.16;
+    building.add(awningTop);
+  } else {
+    const chimney = roundedBox([0.42, 0.82, 0.42], materials.roofCoral, 0.08, 2);
+    chimney.position.set(width * 0.27, 1.8 + height, 0);
+    building.add(chimney);
   }
   parent.add(building);
 };
 
-const addTree = (parent: THREE.Object3D, x: number, z: number, scale = 1): void => {
-  const tree = new THREE.Group();
-  tree.position.set(x, 1, z);
-  tree.scale.setScalar(scale);
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.16, 0.85, 8), material(SCENE_COLORS.dock));
-  trunk.position.y = 0.38;
-  trunk.castShadow = true;
-  const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(0.68, 1), material(SCENE_COLORS.foliage));
-  crown.position.y = 1.13;
-  crown.scale.set(0.85, 1.1, 0.85);
-  crown.castShadow = true;
-  tree.add(trunk, crown);
-  parent.add(tree);
+const addDock = (parent: THREE.Object3D, materials: SceneMaterials): void => {
+  const dock = new THREE.Group();
+  const plankWidth = 0.72;
+  for (let index = 0; index < 9; index += 1) {
+    const plank = roundedBox([plankWidth - 0.055, 0.24, 2.65], materials.timber, 0.07, 2);
+    plank.position.set(-4.9 + index * plankWidth, 0.74 + (index % 3) * 0.012, 10.25);
+    dock.add(plank);
+    const grain = roundedBox([0.035, 0.018, 2.15], materials.timberDark, 0.01, 1);
+    grain.position.set(plank.position.x + 0.15, 0.875, 10.25);
+    grain.castShadow = false;
+    dock.add(grain);
+  }
+  const fascia = roundedBox([6.55, 0.44, 0.28], materials.timberDark, 0.08, 2);
+  fascia.position.set(-2.02, 0.69, 11.58);
+  dock.add(fascia);
+  for (const x of [-4.8, -2.7, -0.6, 1.0]) {
+    const support = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.19, 2.25, 10), materials.timberDark);
+    support.position.set(x, -0.05, 11.15);
+    support.castShadow = true;
+    dock.add(support);
+  }
+  const step = roundedBox([2.5, 0.28, 0.95], materials.pavingA, 0.1, 2);
+  step.position.set(-2.3, 0.9, 8.95);
+  dock.add(step);
+  parent.add(dock);
 };
 
-const createRobot = (): THREE.Group => {
+const createRobot = (materials: SceneMaterials): THREE.Group => {
   const robot = new THREE.Group();
-  const body = roundedBox([1.05, 1.05, 0.85], SCENE_COLORS.robot, 0.24);
-  body.position.y = 0.72;
-  const head = roundedBox([0.78, 0.52, 0.72], SCENE_COLORS.white, 0.2);
-  head.position.set(0.12, 1.48, 0);
-  const face = roundedBox([0.09, 0.29, 0.5], SCENE_COLORS.ink, 0.08);
-  face.position.set(0.53, 1.48, 0);
-  const eyeMaterial = new THREE.MeshBasicMaterial({ color: SCENE_COLORS.robotLight });
+  const contact = new THREE.Mesh(
+    new THREE.CircleGeometry(0.72, 24),
+    new THREE.MeshBasicMaterial({ color: COLORS.ink, transparent: true, opacity: 0.18, depthWrite: false }),
+  );
+  contact.rotation.x = -Math.PI / 2;
+  contact.scale.set(1.15, 0.72, 1);
+  contact.position.y = -0.025;
+  const lower = roundedBox([1.08, 0.6, 0.9], materials.robot, 0.22, 4);
+  lower.position.y = 0.55;
+  const body = roundedBox([0.92, 0.7, 0.78], materials.robot, 0.2, 4);
+  body.position.y = 1.02;
+  const panel = roundedBox([0.08, 0.38, 0.5], materials.plasterCoral, 0.06, 2);
+  panel.position.set(0.5, 0.94, 0);
+  const head = roundedBox([0.82, 0.55, 0.72], materials.cream, 0.2, 4);
+  head.position.set(0.1, 1.55, 0);
+  const face = roundedBox([0.085, 0.32, 0.5], materials.glassDark, 0.07, 2);
+  face.position.set(0.53, 1.55, 0);
+  const eyeMaterial = new THREE.MeshBasicMaterial({ color: COLORS.brass });
   for (const z of [-0.14, 0.14]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), eyeMaterial);
-    eye.position.set(0.585, 1.51, z);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.052, 10, 8), eyeMaterial);
+    eye.position.set(0.585, 1.58, z);
     robot.add(eye);
   }
-  const parcel = roundedBox([0.52, 0.52, 0.52], 0xd9a46e, 0.08);
-  parcel.position.set(-0.53, 0.85, 0);
-  const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.62, 16), material(SCENE_COLORS.ink, 0.65, 0.05));
-  wheel.rotation.x = Math.PI / 2;
-  wheel.position.set(-0.08, 0.25, 0);
-  robot.add(body, head, face, parcel, wheel);
+  const parcel = roundedBox([0.58, 0.62, 0.64], materials.plasterWarm, 0.08, 2);
+  parcel.position.set(-0.58, 0.9, 0);
+  const parcelBand = roundedBox([0.6, 0.12, 0.66], materials.timberDark, 0.02, 1);
+  parcelBand.position.set(-0.58, 0.92, 0);
+  for (const z of [-0.48, 0.48]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.16, 18), materials.ink);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(-0.05, 0.28, z);
+    wheel.castShadow = true;
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.18, 14), materials.brass);
+    hub.rotation.x = Math.PI / 2;
+    hub.position.set(-0.05, 0.28, z * 1.02);
+    robot.add(wheel, hub);
+  }
+  robot.add(contact, lower, body, panel, head, face, parcel, parcelBand);
   return robot;
 };
 
-const createBus = (): THREE.Group => {
+const createBus = (materials: SceneMaterials): THREE.Group => {
   const bus = new THREE.Group();
-  const body = roundedBox([2.3, 1.15, 1.03], SCENE_COLORS.bus, 0.28);
-  body.position.y = 0.84;
-  const roof = roundedBox([1.8, 0.25, 0.94], SCENE_COLORS.white, 0.13);
-  roof.position.set(-0.12, 1.52, 0);
-  const glass = material(SCENE_COLORS.window, 0.22, 0.08);
-  for (const x of [-0.58, 0.02, 0.62]) {
-    for (const z of [-0.53, 0.53]) {
-      const windowMesh = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.38, 0.07, 2, 0.07), glass);
-      windowMesh.position.set(x, 1.03, z);
-      bus.add(windowMesh);
+  const contact = new THREE.Mesh(
+    new THREE.CircleGeometry(1.2, 28),
+    new THREE.MeshBasicMaterial({ color: COLORS.ink, transparent: true, opacity: 0.18, depthWrite: false }),
+  );
+  contact.rotation.x = -Math.PI / 2;
+  contact.scale.set(1.15, 0.55, 1);
+  contact.position.y = -0.025;
+  const chassis = roundedBox([2.45, 0.35, 1.08], materials.ink, 0.13, 3);
+  chassis.position.y = 0.42;
+  const body = roundedBox([2.4, 1.18, 1.06], materials.bus, 0.27, 4);
+  body.position.y = 0.9;
+  const lowerBand = roundedBox([2.42, 0.22, 1.075], materials.plasterWarm, 0.08, 2);
+  lowerBand.position.y = 0.57;
+  const roof = roundedBox([2.05, 0.24, 0.98], materials.cream, 0.13, 3);
+  roof.position.set(-0.12, 1.58, 0);
+  for (const x of [-0.66, -0.08, 0.5]) {
+    for (const z of [-0.535, 0.535]) {
+      const recess = roundedBox([0.45, 0.42, 0.065], materials.glassDark, 0.06, 2);
+      recess.position.set(x, 1.12, z);
+      bus.add(recess);
     }
   }
-  const frontWindow = new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.52, 0.72, 2, 0.1), glass);
-  frontWindow.position.set(1.17, 1.04, 0);
-  const wheelMaterial = material(SCENE_COLORS.ink, 0.8);
-  for (const x of [-0.72, 0.72]) {
-    for (const z of [-0.53, 0.53]) {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.13, 16), wheelMaterial);
+  const frontWindow = roundedBox([0.07, 0.56, 0.76], materials.glassDark, 0.09, 2);
+  frontWindow.position.set(1.215, 1.13, 0);
+  const bumper = roundedBox([0.16, 0.2, 0.92], materials.cream, 0.05, 2);
+  bumper.position.set(1.29, 0.45, 0);
+  const rearBumper = roundedBox([0.16, 0.18, 0.9], materials.cream, 0.05, 2);
+  rearBumper.position.set(-1.28, 0.45, 0);
+  for (const z of [-0.32, 0.32]) {
+    const light = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 8), materials.cream);
+    light.position.set(1.315, 0.78, z);
+    bus.add(light);
+  }
+  for (const x of [-0.75, 0.72]) {
+    for (const z of [-0.56, 0.56]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.16, 18), materials.ink);
       wheel.rotation.x = Math.PI / 2;
-      wheel.position.set(x, 0.33, z);
+      wheel.position.set(x, 0.31, z);
       wheel.castShadow = true;
-      bus.add(wheel);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.18, 14), materials.pavingB);
+      hub.rotation.x = Math.PI / 2;
+      hub.position.set(x, 0.31, z * 1.02);
+      bus.add(wheel, hub);
     }
   }
-  bus.add(body, roof, frontWindow);
+  bus.add(contact, chassis, body, lowerBand, roof, frontWindow, bumper, rearBumper);
   return bus;
 };
 
-const createActorVisual = (actorId: string): ActorVisual => {
+const createActorVisual = (actorId: string, materials: SceneMaterials): ActorVisual => {
   const root = new THREE.Group();
   root.userData.actorId = actorId;
-  const model = actorId === 'B' ? createBus() : createRobot();
+  const model = actorId === 'B' ? createBus(materials) : createRobot(materials);
   model.traverse((child) => { child.userData.actorId = actorId; });
-  const selectionMaterial = new THREE.MeshBasicMaterial({ color: SCENE_COLORS.crossing, transparent: true, opacity: 0.85, depthWrite: false });
-  const selection = new THREE.Mesh(new THREE.RingGeometry(actorId === 'B' ? 1.25 : 0.78, actorId === 'B' ? 1.4 : 0.92, 40), selectionMaterial);
+  const selection = new THREE.Mesh(
+    new THREE.RingGeometry(actorId === 'B' ? 1.35 : 0.86, actorId === 'B' ? 1.52 : 1.02, 40),
+    new THREE.MeshBasicMaterial({ color: COLORS.brass, transparent: true, opacity: 0.9, depthWrite: false }),
+  );
   selection.rotation.x = -Math.PI / 2;
-  selection.position.y = 0.05;
+  selection.position.y = -0.012;
   const waitSignal = new THREE.Mesh(
-    new THREE.TorusGeometry(actorId === 'B' ? 1.12 : 0.7, 0.055, 8, 32),
-    new THREE.MeshBasicMaterial({ color: SCENE_COLORS.white, transparent: true, opacity: 0.75, depthWrite: false }),
+    new THREE.TorusGeometry(actorId === 'B' ? 1.2 : 0.75, 0.055, 8, 32),
+    new THREE.MeshBasicMaterial({ color: COLORS.cream, transparent: true, opacity: 0.8, depthWrite: false }),
   );
   waitSignal.rotation.x = Math.PI / 2;
-  waitSignal.position.y = 1.95;
+  waitSignal.position.y = 2.05;
   waitSignal.visible = false;
+  const arrivalSignal = new THREE.Mesh(
+    new THREE.RingGeometry(actorId === 'B' ? 1.2 : 0.74, actorId === 'B' ? 1.32 : 0.84, 40),
+    new THREE.MeshBasicMaterial({ color: actorId === 'B' ? COLORS.bus : COLORS.robot, transparent: true, opacity: 0.7, depthWrite: false }),
+  );
+  arrivalSignal.rotation.x = -Math.PI / 2;
+  arrivalSignal.position.y = 0.015;
+  arrivalSignal.visible = false;
   const touchTarget = new THREE.Mesh(
-    new THREE.BoxGeometry(actorId === 'B' ? 3.4 : 2.8, 3, actorId === 'B' ? 2.4 : 2.8),
+    new THREE.BoxGeometry(actorId === 'B' ? 3.5 : 2.9, 3.1, actorId === 'B' ? 2.5 : 2.9),
     new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
   );
-  touchTarget.position.y = 1.1;
+  touchTarget.position.y = 1.05;
   touchTarget.userData.actorId = actorId;
-  root.add(model, selection, waitSignal, touchTarget);
-  return { root, selection, waitSignal };
+  root.add(model, selection, waitSignal, arrivalSignal, touchTarget);
+  return { root, selection, waitSignal, arrivalSignal };
 };
 
 const createRouteLine = (curves: readonly THREE.CatmullRomCurve3[]): THREE.Group => {
   const group = new THREE.Group();
   for (const curve of curves) {
-    const raisedCurve = new THREE.CatmullRomCurve3(curve.points.map((routePoint) => new THREE.Vector3(routePoint.x, 1.5, routePoint.z)));
+    const raisedCurve = new THREE.CatmullRomCurve3(curve.points.map((point) => new THREE.Vector3(point.x, ROAD_SURFACE_Y + 0.075, point.z)));
     const route = new THREE.Mesh(
-      new THREE.TubeGeometry(raisedCurve, 36, 0.1, 8, false),
-      new THREE.MeshBasicMaterial({ color: SCENE_COLORS.robot, transparent: true, opacity: 0.34, depthWrite: false }),
+      new THREE.TubeGeometry(raisedCurve, 44, 0.07, 8, false),
+      new THREE.MeshBasicMaterial({ color: COLORS.robot, transparent: true, opacity: 0.34, depthWrite: false }),
     );
-    route.renderOrder = 4;
+    route.renderOrder = 5;
     group.add(route);
   }
   return group;
@@ -235,137 +558,128 @@ const createRouteLine = (curves: readonly THREE.CatmullRomCurve3[]): THREE.Group
 const setRouteStyle = (group: THREE.Group, selected: boolean): void => {
   group.traverse((child) => {
     if (!(child instanceof THREE.Mesh) || !(child.material instanceof THREE.MeshBasicMaterial)) return;
-    child.material.color.setHex(selected ? SCENE_COLORS.robot : SCENE_COLORS.white);
-    child.material.opacity = selected ? 0.95 : 0.42;
+    child.material.color.setHex(selected ? COLORS.robot : COLORS.cream);
+    child.material.opacity = selected ? 0.96 : 0.48;
   });
 };
 
-const createDestination = (color: number): THREE.Group => {
+const createDestination = (color: number, materials: SceneMaterials): THREE.Group => {
   const destination = new THREE.Group();
-  const marker = roundedBox([0.42, 1.35, 0.42], color, 0.14);
-  marker.position.y = 0.72;
-  const cap = roundedBox([0.8, 0.24, 0.8], SCENE_COLORS.white, 0.12);
-  cap.position.y = 1.44;
+  const foundation = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.68, 0.22, 16), materials.roadEdge);
+  foundation.position.y = 0.1;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.25, 1.15, 12), standardMaterial(color, 0.72));
+  post.position.y = 0.75;
+  post.castShadow = true;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.3, 0.22, 12), materials.cream);
+  cap.position.y = 1.42;
+  cap.castShadow = true;
   const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.72, 0.9, 32),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.82, depthWrite: false }),
+    new THREE.RingGeometry(0.7, 0.85, 36),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.88, depthWrite: false }),
   );
   ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.04;
-  ring.renderOrder = 3;
-  destination.add(marker, cap, ring);
+  ring.position.y = 0.025;
+  ring.renderOrder = 4;
+  destination.add(foundation, post, cap, ring);
   return destination;
 };
 
-const routeCurves = (routeId: string): Readonly<Record<string, readonly THREE.CatmullRomCurve3[]>> => ({
-  R: routeId === 'garden'
-    ? [new THREE.CatmullRomCurve3([
-        STARTS.R,
-        new THREE.Vector3(-6.8, VEHICLE_HEIGHT, -5.7),
-        new THREE.Vector3(-2.2, VEHICLE_HEIGHT, -6.8),
-        new THREE.Vector3(3.5, VEHICLE_HEIGHT, -6.1),
-        ENDS.R,
-      ])]
-    : [
-        new THREE.CatmullRomCurve3([STARTS.R, new THREE.Vector3(-4.5, VEHICLE_HEIGHT, -2.1), new THREE.Vector3(-1.25, VEHICLE_HEIGHT + 0.2, -0.45), CROSSING]),
-        new THREE.CatmullRomCurve3([CROSSING, new THREE.Vector3(3.5, VEHICLE_HEIGHT, 1.1), ENDS.R]),
-      ],
-  B: [
-    new THREE.CatmullRomCurve3([STARTS.B, new THREE.Vector3(-4.8, VEHICLE_HEIGHT, 3.8), new THREE.Vector3(-1.15, VEHICLE_HEIGHT + 0.2, 0.9), CROSSING]),
-    new THREE.CatmullRomCurve3([CROSSING, new THREE.Vector3(3.8, VEHICLE_HEIGHT, -1.65), ENDS.B]),
-  ],
-});
-
-const actorStateAtBeat = (
-  actorId: string,
+const updateActorStateAtBeat = (
+  state: ActorFrameState,
   curves: readonly THREE.CatmullRomCurve3[],
-  events: readonly TraversalTraceEvent[],
+  actorEvents: readonly TraversalTraceEvent[],
   beat: number,
-): { readonly position: THREE.Vector3; readonly tangent: THREE.Vector3; readonly waiting: boolean } => {
-  const actorEvents = events.filter((event) => event.actorId === actorId).sort((a, b) => a.stepIndex - b.stepIndex);
+): void => {
+  state.waiting = false;
+  state.arrived = false;
   if (actorEvents.length === 0) {
-    return { position: curves[0]!.getPoint(0), tangent: curves[0]!.getTangent(0), waiting: false };
+    curves[0]!.getPoint(0, state.position);
+    curves[0]!.getTangent(0, state.tangent);
+    return;
   }
   for (let index = 0; index < actorEvents.length; index += 1) {
     const event = actorEvents[index]!;
     const curve = curves[event.stepIndex] ?? curves.at(-1)!;
     if (beat < event.start) {
-      return { position: curve.getPoint(0), tangent: curve.getTangent(0), waiting: beat >= event.readyBeat };
+      curve.getPoint(0, state.position);
+      curve.getTangent(0, state.tangent);
+      state.waiting = beat >= event.readyBeat;
+      return;
     }
     if (beat <= event.end) {
       const rawProgress = event.end === event.start ? 1 : (beat - event.start) / (event.end - event.start);
       const progress = THREE.MathUtils.smoothstep(rawProgress, 0, 1);
-      return { position: curve.getPoint(progress), tangent: curve.getTangent(progress), waiting: false };
+      curve.getPoint(progress, state.position);
+      curve.getTangent(progress, state.tangent);
+      return;
     }
   }
   const finalCurve = curves[Math.min(curves.length, actorEvents.length) - 1]!;
-  return { position: finalCurve.getPoint(1), tangent: finalCurve.getTangent(1), waiting: false };
+  finalCurve.getPoint(1, state.position);
+  finalCurve.getTangent(1, state.tangent);
+  state.arrived = beat >= actorEvents.at(-1)!.end;
 };
 
-const createHarbor = (waterGeometry: THREE.PlaneGeometry): THREE.Group => {
+const createHarbor = (waterGeometry: THREE.PlaneGeometry, materials: SceneMaterials): THREE.Group => {
   const harbor = new THREE.Group();
-  const water = new THREE.Mesh(waterGeometry, material(SCENE_COLORS.water, 0.28, 0.05));
+  const water = new THREE.Mesh(waterGeometry, materials.water);
   water.receiveShadow = true;
   harbor.add(water);
 
-  const island = roundedBox([21, 1.15, 16], SCENE_COLORS.stoneSide, 0.8, 5);
-  island.position.set(0, 0.1, 0);
-  const islandTop = roundedBox([20.6, 0.42, 15.6], SCENE_COLORS.stone, 0.72, 5);
-  islandTop.position.set(0, 0.72, 0);
-  harbor.add(island, islandTop);
+  const shallow = roundedBox([19.4, 0.12, 22.4], materials.shallowWater, 1.3, 5);
+  shallow.position.set(0, -0.32, 0.18);
+  shallow.castShadow = false;
+  const island = roundedBox([18.3, 1.18, 21.3], materials.shoreline, 1.1, 5);
+  island.position.set(0, 0.12, 0);
+  const islandTop = roundedBox([17.85, 0.46, 20.85], materials.limestone, 0.94, 5);
+  islandTop.position.set(0, 0.75, 0);
+  harbor.add(shallow, island, islandTop);
 
-  addRoadSegment(harbor, new THREE.Vector3(-9.2, 0, -2.5), new THREE.Vector3(-4.4, 0, -2.2), 2.2);
-  addRoadSegment(harbor, new THREE.Vector3(-4.4, 0, -2.2), new THREE.Vector3(0.2, 0, 0.15), 2.2);
-  addRoadSegment(harbor, new THREE.Vector3(-8.3, 0, 5.4), new THREE.Vector3(-4.2, 0, 3.6), 2.35);
-  addRoadSegment(harbor, new THREE.Vector3(-4.2, 0, 3.6), new THREE.Vector3(0.2, 0, 0.15), 2.35);
-  addRoadSegment(harbor, new THREE.Vector3(0.2, 0, 0.15), new THREE.Vector3(7.9, 0, -4), 2.35);
-  addRoadSegment(harbor, new THREE.Vector3(0.2, 0, 0.15), new THREE.Vector3(7.5, 0, 3.8), 2.2);
-  addRoadSegment(harbor, new THREE.Vector3(-8.6, 0, -2.7), new THREE.Vector3(-7, 0, -6), 1.65, 0x687b72, 0.28);
-  addRoadSegment(harbor, new THREE.Vector3(-7, 0, -6), new THREE.Vector3(3.5, 0, -6.2), 1.65, 0x687b72, 0.28);
-  addRoadSegment(harbor, new THREE.Vector3(3.5, 0, -6.2), new THREE.Vector3(7.5, 0, 3.8), 1.65, 0x687b72, 0.28);
+  addPavingArea(harbor, materials, 0, 0, 4, 4, 1.15);
+  addPavingArea(harbor, materials, -0.2, 7.1, 4, 2, 1.12);
+  addPavingArea(harbor, materials, 4.9, 2.05, 3, 2, 1.08);
+  addPavingArea(harbor, materials, -1.0, -5.6, 3, 2, 1.08);
 
-  const canal = roundedBox([4.5, 0.62, 3.5], SCENE_COLORS.waterDeep, 0.42);
-  canal.position.set(0.2, 0.92, 0.1);
-  canal.receiveShadow = true;
-  const bridge = roundedBox([4.7, 0.48, 1.58], SCENE_COLORS.crossing, 0.28);
-  bridge.position.set(0.15, 1.16, 0.15);
-  bridge.rotation.y = -0.48;
-  harbor.add(canal, bridge);
-  for (const offset of [-1, 0, 1]) {
-    const stripe = roundedBox([0.12, 0.05, 1.22], SCENE_COLORS.white, 0.03, 2);
-    stripe.position.set(0.15 + offset * 0.65, 1.43, 0.15 - offset * 0.34);
-    stripe.rotation.y = -0.48;
-    stripe.castShadow = false;
-    harbor.add(stripe);
+  addLawnBed(harbor, materials, -4.55, -5.15, 2.15, 3.45, -0.18);
+  addLawnBed(harbor, materials, -1.75, -4.8, 2.35, 2.7, 0.08);
+  addLawnBed(harbor, materials, 1.55, -4.75, 2.45, 2.65, -0.08);
+  addLawnBed(harbor, materials, 4.15, -3.9, 1.85, 2.6, -0.35);
+  addGardenTufts(harbor, materials);
+
+  addRoad(harbor, ROUTE_CURVES.crossing.R!, 1.72, materials);
+  addRoad(harbor, ROUTE_CURVES.crossing.B!, 1.9, materials);
+  addRoad(harbor, ROUTE_CURVES.garden.R!, 1.42, materials, true);
+
+  const crossingBase = roundedBox([3.45, 0.2, 3.45], materials.roadEdge, 0.55, 4);
+  crossingBase.position.set(0, ROAD_SURFACE_Y - 0.055, 0);
+  crossingBase.rotation.y = Math.PI / 4;
+  const crossingTop = roundedBox([3.08, 0.16, 3.08], materials.road, 0.48, 4);
+  crossingTop.position.set(0, ROAD_SURFACE_Y + 0.02, 0);
+  crossingTop.rotation.y = Math.PI / 4;
+  harbor.add(crossingBase, crossingTop);
+  for (const offset of [-0.72, 0, 0.72]) {
+    const crossingMark = roundedBox([0.16, 0.035, 1.42], materials.cream, 0.03, 1);
+    crossingMark.position.set(offset, ROAD_SURFACE_Y + 0.115, 0);
+    crossingMark.rotation.y = -Math.PI / 4;
+    crossingMark.castShadow = false;
+    harbor.add(crossingMark);
   }
 
-  const dock = roundedBox([7.4, 0.46, 2.2], SCENE_COLORS.dock, 0.24);
-  dock.position.set(-1.6, 0.95, 8.1);
-  harbor.add(dock);
-  for (const x of [-4.6, -2.1, 0.4, 1.4]) {
-    const piling = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 2, 10), material(SCENE_COLORS.ink));
-    piling.position.set(x, 0.15, 8.65);
-    piling.castShadow = true;
-    harbor.add(piling);
-  }
+  addDock(harbor, materials);
+  addBuilding(harbor, materials, -0.25, 7.15, 2.7, 2.15, 2.45, materials.plaster, materials.roofTeal, -1);
+  addBuilding(harbor, materials, 4.9, 2.1, 2.5, 2.25, 2.3, materials.plasterCoral, materials.roofCoral, -1, true);
+  addBuilding(harbor, materials, -1.05, -5.55, 2.35, 2, 2.05, materials.plasterWarm, materials.roofTeal, 1);
 
-  addBuilding(harbor, 6.6, 6.4, 2.35, 1.9, 2.15, 0xf1d5a5, SCENE_COLORS.roofBlue);
-  addBuilding(harbor, 7, 0.5, 2.1, 2.2, 2.25, 0xd9be9b, SCENE_COLORS.roofRed);
-  addBuilding(harbor, -4.8, -5, 2.2, 1.75, 1.9, 0xe7d9bd, SCENE_COLORS.roofBlue);
-
-  addTree(harbor, -8.3, 2.2, 0.85);
-  addTree(harbor, -6.9, -5.8, 0.72);
-  addTree(harbor, -2.4, -5.4, 0.8);
-  addTree(harbor, 1.6, -5.5, 0.68);
-  addTree(harbor, 8.5, -0.5, 0.64);
-  addTree(harbor, 9, 5.4, 0.58);
-
-  const buoyMaterial = material(SCENE_COLORS.robot, 0.55);
-  for (const [x, z] of [[-8.5, 9.5], [4.2, 9.4], [10.8, 3.1]] as const) {
-    const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), buoyMaterial);
-    buoy.scale.y = 1.4;
-    buoy.position.set(x, 0.18, z);
-    buoy.castShadow = true;
+  TREE_SPECS.forEach(([x, z, scale]) => addTree(harbor, materials, x, z, scale));
+  for (const [x, z] of BUOY_SPECS) {
+    const buoy = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), materials.robot);
+    body.scale.y = 1.5;
+    body.position.y = -0.15;
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.5, 8), materials.cream);
+    tip.position.y = 0.18;
+    buoy.position.set(x, 0, z);
+    buoy.add(body, tip);
     harbor.add(buoy);
   }
   return harbor;
@@ -393,81 +707,96 @@ export function LevelOneHarborScene({
     if (host === null) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdce5df);
-    scene.fog = new THREE.Fog(0xdce5df, 31, 54);
+    scene.background = new THREE.Color(COLORS.waterDeep);
+    scene.fog = new THREE.Fog(COLORS.waterDeep, 42, 72);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.02;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.VSMShadowMap;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.domElement.setAttribute('aria-hidden', 'true');
     host.replaceChildren(renderer.domElement);
 
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 90);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
     camera.position.copy(CAMERA_POSITION);
     camera.lookAt(CAMERA_TARGET);
+    camera.updateMatrixWorld();
+    const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
+    const cameraOffset = new THREE.Vector3();
+    const desiredOffset = new THREE.Vector3();
 
-    const hemisphere = new THREE.HemisphereLight(0xf8efe0, 0x456c71, 2.1);
-    scene.add(hemisphere);
-    const sun = new THREE.DirectionalLight(0xffe6bf, 4.3);
-    sun.position.set(-11, 22, 13);
+    const skyFill = new THREE.HemisphereLight(0xfff2d4, 0x225c64, 1.55);
+    scene.add(skyFill);
+    const sun = new THREE.DirectionalLight(0xffdfaa, 3.35);
+    sun.position.set(-14, 24, 13);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -20;
-    sun.shadow.camera.right = 20;
-    sun.shadow.camera.top = 20;
-    sun.shadow.camera.bottom = -20;
-    sun.shadow.camera.near = 2;
-    sun.shadow.camera.far = 60;
-    sun.shadow.bias = -0.0006;
-    sun.shadow.radius = 3;
-    sun.shadow.blurSamples = 12;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -18;
+    sun.shadow.camera.right = 18;
+    sun.shadow.camera.top = 22;
+    sun.shadow.camera.bottom = -22;
+    sun.shadow.camera.near = 4;
+    sun.shadow.camera.far = 65;
+    sun.shadow.bias = -0.00035;
+    sun.shadow.normalBias = 0.025;
+    sun.shadow.radius = 4;
+    sun.shadow.blurSamples = 10;
     scene.add(sun);
 
-    const waterGeometry = new THREE.PlaneGeometry(62, 48, 32, 24);
+    const materials = createMaterials();
+    const waterGeometry = new THREE.PlaneGeometry(100, 100, 34, 34);
     waterGeometry.rotateX(-Math.PI / 2);
     const waterPositions = waterGeometry.getAttribute('position') as THREE.BufferAttribute;
     const baseWaterPositions = Float32Array.from(waterPositions.array as ArrayLike<number>);
-    scene.add(createHarbor(waterGeometry));
+    const waterColors: number[] = [];
+    const deep = new THREE.Color(COLORS.waterDeep);
+    const light = new THREE.Color(COLORS.waterHighlight);
+    for (let index = 0; index < waterPositions.count; index += 1) {
+      const x = waterPositions.getX(index);
+      const z = waterPositions.getZ(index);
+      const mix = THREE.MathUtils.clamp(0.22 + Math.sin(x * 0.16) * 0.07 + Math.cos(z * 0.13) * 0.06, 0.08, 0.38);
+      const color = deep.clone().lerp(light, mix);
+      waterColors.push(color.r, color.g, color.b);
+    }
+    waterGeometry.setAttribute('color', new THREE.Float32BufferAttribute(waterColors, 3));
+    scene.add(createHarbor(waterGeometry, materials));
 
     const actorVisuals = new Map<string, ActorVisual>();
     for (const actorId of ['R', 'B']) {
-      const visual = createActorVisual(actorId);
+      const visual = createActorVisual(actorId, materials);
       actorVisuals.set(actorId, visual);
       scene.add(visual.root);
     }
 
-    const crossingRoute = createRouteLine(routeCurves('crossing').R!);
-    const gardenRoute = createRouteLine(routeCurves('garden').R!);
+    const crossingRoute = createRouteLine(ROUTE_CURVES.crossing.R!);
+    const gardenRoute = createRouteLine(ROUTE_CURVES.garden.R!);
     scene.add(crossingRoute, gardenRoute);
 
-    const robotDestination = createDestination(SCENE_COLORS.robot);
-    robotDestination.position.set(ENDS.R.x, 1.05, ENDS.R.z);
-    const busDestination = createDestination(SCENE_COLORS.bus);
-    busDestination.position.set(ENDS.B.x, 1.05, ENDS.B.z);
+    const robotDestination = createDestination(COLORS.robot, materials);
+    robotDestination.position.set(ENDS.R.x, ROAD_SURFACE_Y + 0.02, ENDS.R.z);
+    const busDestination = createDestination(COLORS.bus, materials);
+    busDestination.position.set(ENDS.B.x, ROAD_SURFACE_Y + 0.02, ENDS.B.z);
     scene.add(robotDestination, busDestination);
 
+    let width = 1;
+    let height = 1;
+    let currentFrustum = CAMERA_FRUSTUM;
+    let cameraInitialized = false;
     const resize = (): void => {
-      const width = Math.max(1, host.clientWidth);
-      const height = Math.max(1, host.clientHeight);
-      const aspect = width / height;
-      const baseFrustum = CAMERA_FRUSTUM / stateRef.current.zoom;
-      const horizontalFit = MIN_HORIZONTAL_FRUSTUM / aspect;
-      const sheetScale = stateRef.current.bottomSheetOpen ? 1.1 : 1;
-      const frustum = Math.max(baseFrustum, horizontalFit) * sheetScale;
-      camera.left = -frustum * aspect / 2;
-      camera.right = frustum * aspect / 2;
-      camera.top = frustum / 2;
-      camera.bottom = -frustum / 2;
-      camera.updateProjectionMatrix();
+      width = Math.max(1, host.clientWidth);
+      height = Math.max(1, host.clientHeight);
       renderer.setSize(width, height, false);
+      if (!cameraInitialized) {
+        const aspect = width / height;
+        currentFrustum = Math.max(CAMERA_FRUSTUM / stateRef.current.zoom, MIN_HORIZONTAL_FRUSTUM / aspect);
+        cameraInitialized = true;
+      }
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(host);
     resize();
-    let renderedFraming = `${stateRef.current.zoom}:${stateRef.current.bottomSheetOpen}`;
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -486,32 +815,63 @@ export function LevelOneHarborScene({
     let frameSampleCount = 0;
     const timer = new THREE.Timer();
     timer.connect(document);
+    const cameraTarget = new THREE.Vector3();
+    const actorFrameStates = new Map<string, ActorFrameState>([...actorVisuals.keys()].map((actorId) => [actorId, {
+      position: new THREE.Vector3(),
+      tangent: new THREE.Vector3(),
+      waiting: false,
+      arrived: false,
+    }]));
+    const actorEvents = new Map<string, TraversalTraceEvent[]>();
+    const emptyActorEvents: readonly TraversalTraceEvent[] = [];
+    let cachedResult: SimulationResult | undefined;
     const animate = (): void => {
       timer.update();
       const elapsed = timer.getElapsed();
       const current = stateRef.current;
-      const currentFraming = `${current.zoom}:${current.bottomSheetOpen}`;
-      if (currentFraming !== renderedFraming) {
-        renderedFraming = currentFraming;
-        resize();
-      }
-      const routeValue = current.plan[planKey('R', 'route')];
-      const robotRoute = typeof routeValue === 'string' ? routeValue : 'crossing';
-      const curves = routeCurves(robotRoute);
-      const events = current.result.trace.filter((event): event is TraversalTraceEvent => event.kind === 'traversal');
+      const aspect = width / height;
+      const targetFrustum = Math.max(CAMERA_FRUSTUM / current.zoom, MIN_HORIZONTAL_FRUSTUM / aspect) * (current.bottomSheetOpen ? 1.025 : 1);
+      const transition = current.reducedMotion ? 1 : 0.12;
+      currentFrustum = THREE.MathUtils.lerp(currentFrustum, targetFrustum, transition);
+      desiredOffset.copy(screenUp).multiplyScalar(current.bottomSheetOpen ? -1.7 : -0.25);
+      cameraOffset.lerp(desiredOffset, transition);
+      camera.position.copy(CAMERA_POSITION).add(cameraOffset);
+      cameraTarget.copy(CAMERA_TARGET).add(cameraOffset);
+      camera.lookAt(cameraTarget);
+      camera.left = -currentFrustum * aspect / 2;
+      camera.right = currentFrustum * aspect / 2;
+      camera.top = currentFrustum / 2;
+      camera.bottom = -currentFrustum / 2;
+      camera.updateProjectionMatrix();
 
+      const routeValue = current.plan[planKey('R', 'route')];
+      const robotRoute = routeValue === 'garden' ? 'garden' : 'crossing';
+      const curves = ROUTE_CURVES[robotRoute];
+      if (cachedResult !== current.result) {
+        actorEvents.clear();
+        for (const event of current.result.trace) {
+          if (event.kind !== 'traversal') continue;
+          const events = actorEvents.get(event.actorId) ?? [];
+          events.push(event);
+          actorEvents.set(event.actorId, events);
+        }
+        actorEvents.forEach((events) => events.sort((a, b) => a.stepIndex - b.stepIndex));
+        cachedResult = current.result;
+      }
       for (const [actorId, visual] of actorVisuals) {
-        const state = actorStateAtBeat(actorId, curves[actorId]!, events, current.timelineBeat);
+        const state = actorFrameStates.get(actorId)!;
+        updateActorStateAtBeat(state, curves[actorId]!, actorEvents.get(actorId) ?? emptyActorEvents, current.timelineBeat);
         visual.root.position.copy(state.position);
         visual.root.rotation.y = -Math.atan2(state.tangent.z, state.tangent.x);
-        const selected = current.selectedActorId === actorId;
-        visual.selection.visible = selected;
+        visual.selection.visible = current.selectedActorId === actorId;
         visual.waitSignal.visible = state.waiting;
-        if (!current.reducedMotion) {
-          visual.root.position.y += Math.sin(elapsed * 2.2 + (actorId === 'B' ? 1.4 : 0)) * 0.025;
-          visual.selection.scale.setScalar(1 + Math.sin(elapsed * 2.5) * 0.04);
-          visual.waitSignal.rotation.z = elapsed * 0.8;
+        visual.waitSignal.rotation.z = elapsed * 0.8;
+        visual.arrivalSignal.visible = state.arrived;
+        if (state.arrived) {
+          const arrivalPulse = current.reducedMotion ? 1.08 : 1.06 + Math.sin(elapsed * 2.2) * 0.08;
+          visual.arrivalSignal.scale.setScalar(arrivalPulse);
         }
+        if (!current.reducedMotion) visual.root.position.y += Math.sin(elapsed * 1.8 + (actorId === 'B' ? 1.2 : 0)) * 0.012;
       }
 
       crossingRoute.visible = current.showRobotRoutes;
@@ -523,19 +883,20 @@ export function LevelOneHarborScene({
       busDestination.scale.setScalar(destinationScale);
 
       if (!current.reducedMotion) {
-        const positions = waterGeometry.getAttribute('position') as THREE.BufferAttribute;
-        for (let index = 0; index < positions.count; index += 1) {
+        for (let index = 0; index < waterPositions.count; index += 1) {
           const x = baseWaterPositions[index * 3]!;
           const z = baseWaterPositions[index * 3 + 2]!;
-          positions.setY(index, Math.sin(x * 0.42 + elapsed * 0.52) * WATER_VERTEX_MOTION + Math.cos(z * 0.5 + elapsed * 0.35) * WATER_VERTEX_MOTION * 0.55 - 0.55);
+          waterPositions.setY(index, Math.sin(x * 0.34 + elapsed * 0.46) * WATER_VERTEX_MOTION + Math.cos(z * 0.27 + elapsed * 0.33) * WATER_VERTEX_MOTION * 0.62 - 0.48);
         }
-        positions.needsUpdate = true;
+        waterPositions.needsUpdate = true;
       }
 
       renderer.render(scene, camera);
       frameSampleCount += 1;
-      if (performance.now() - frameSampleStart >= 1000) {
-        host.dataset.fps = String(Math.round(frameSampleCount * 1000 / (performance.now() - frameSampleStart)));
+      const sampleDuration = performance.now() - frameSampleStart;
+      if (sampleDuration >= 1000) {
+        host.dataset.fps = String(Math.round(frameSampleCount * 1000 / sampleDuration));
+        host.dataset.frameMs = (sampleDuration / frameSampleCount).toFixed(2);
         host.dataset.drawCalls = String(renderer.info.render.calls);
         host.dataset.triangles = String(renderer.info.render.triangles);
         frameSampleStart = performance.now();
@@ -550,12 +911,16 @@ export function LevelOneHarborScene({
       resizeObserver.disconnect();
       timer.dispose();
       renderer.domElement.removeEventListener('pointerup', pickActor);
+      const geometries = new Set<THREE.BufferGeometry>();
+      const disposableMaterials = new Set<THREE.Material>();
       scene.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return;
-        object.geometry.dispose();
+        if (!(object instanceof THREE.Mesh) && !(object instanceof THREE.InstancedMesh)) return;
+        geometries.add(object.geometry);
         const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
-        objectMaterials.forEach((objectMaterial) => objectMaterial.dispose());
+        objectMaterials.forEach((objectMaterial) => disposableMaterials.add(objectMaterial));
       });
+      geometries.forEach((geometry) => geometry.dispose());
+      disposableMaterials.forEach((objectMaterial) => objectMaterial.dispose());
       renderer.dispose();
       renderer.forceContextLoss();
       host.replaceChildren();

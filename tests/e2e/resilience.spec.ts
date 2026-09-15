@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const openRobotRoutes = async (page: import('@playwright/test').Page): Promise<void> => {
   const skip = page.getByRole('button', { name: 'Skip tutorial', exact: true });
   if (await skip.isVisible()) await skip.click();
-  await page.getByRole('button', { name: 'Select vehicle', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose vehicle', exact: true }).click();
   await page.getByRole('button', { name: 'Parcel robot', exact: true }).click();
 };
 

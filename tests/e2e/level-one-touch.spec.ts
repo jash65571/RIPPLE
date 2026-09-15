@@ -45,7 +45,7 @@ test('the robot can be selected directly from the harbor', async ({ browser, bro
   const { context, page } = await openTouchPage(browser, PHONE_SIZES[1]);
   await expect(page.locator('.harbor-scene canvas')).toBeVisible();
   await page.waitForTimeout(300);
-  await page.touchscreen.tap(123, 338);
+  await page.touchscreen.tap(190, 276);
   await expect(page.getByRole('heading', { name: 'Choose a route' })).toBeVisible();
   await context.close();
 });
@@ -58,7 +58,7 @@ test('first play teaches the conflict, preserves a retry, and saves completion',
   await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Select robot', exact: true })).toBeVisible({ timeout: 8_000 });
   await page.getByRole('button', { name: 'Select robot', exact: true }).click();
-  await page.getByRole('button', { name: 'Market crossing', exact: true }).click();
+  await page.getByRole('button', { name: /^Market crossing/ }).click();
   await page.getByRole('button', { name: 'Go', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
@@ -83,5 +83,31 @@ test('an interrupted tutorial reloads at a safe teaching step', async ({ browser
   await expect(page.getByRole('button', { name: 'Select robot', exact: true })).toBeVisible({ timeout: 8_000 });
   await page.reload();
   await expect(page.getByRole('button', { name: 'Select robot', exact: true })).toBeVisible();
+  await context.close();
+});
+
+test('Level 1 keeps keyboard access and fits with larger text and reduced motion', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Chromium provides the touch emulation used for the portrait preference check.');
+  const { context, page } = await openTouchPage(browser, PHONE_SIZES[0]);
+  const menu = page.getByRole('button', { name: 'Menu', exact: true });
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  const settings = page.getByRole('button', { name: 'Settings', exact: true });
+  await settings.focus();
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Text size').selectOption('1.25');
+  await page.getByLabel('Reduce motion').check();
+  await page.getByRole('button', { name: 'Close settings', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true');
+  await page.getByRole('button', { name: 'Skip tutorial', exact: true }).click();
+  const metrics = await page.evaluate(() => ({
+    horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    vertical: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+  }));
+  expect(metrics).toEqual({ horizontal: 0, vertical: 0 });
+  await page.getByRole('button', { name: 'Go', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
   await context.close();
 });

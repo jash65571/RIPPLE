@@ -15,6 +15,10 @@
 
 The release packager copies license notices from installed packages into `THIRD_PARTY_NOTICES.txt` in each archive. Build and test tooling is not shipped as application runtime code.
 
+## Fonts
+
+- Nunito Sans variable Latin weight subset by the Nunito Sans Project Authors, SIL Open Font License 1.1. Source: Google Fonts project and Fontsource package 5.3.0. The shipped font file is `src/assets/nunito-sans-latin-wght-normal.woff2` and its license is `docs/licenses/Nunito-Sans-OFL.txt`.
+
 ## Reuse policy
 
 Do not add an image, font, sound, or code sample until its source, author, license, required attribution, and allowed commercial use are recorded here. A search result or download availability is not a license.

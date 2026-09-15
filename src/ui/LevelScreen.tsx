@@ -23,6 +23,8 @@ export interface LevelScreenProps {
   readonly onTutorialProgress: (levelId: string, tutorialStep: number) => void;
   readonly offlineReady: boolean;
   readonly onDismissOffline: () => void;
+  readonly updateReady: boolean;
+  readonly onUpdate: () => void;
   readonly settings: PlayerSettings;
   readonly onOpenSettings: () => void;
 }

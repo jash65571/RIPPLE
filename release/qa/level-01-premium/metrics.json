@@ -1,0 +1,86 @@
+[
+  {
+    "viewport": {
+      "width": 360,
+      "height": 800
+    },
+    "scrollOverflow": {
+      "horizontal": 0,
+      "vertical": 0
+    },
+    "scene": {
+      "fps": 109,
+      "frameMs": 9.19,
+      "drawCalls": 373,
+      "triangles": 124810
+    },
+    "resources": {
+      "requests": 8,
+      "transferBytes": 275162,
+      "encodedBytes": 272762,
+      "decodedBytes": 920879
+    },
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "touchPoints": 1,
+      "coarsePointer": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollOverflow": {
+      "horizontal": 0,
+      "vertical": 0
+    },
+    "scene": {
+      "fps": 134,
+      "frameMs": 7.45,
+      "drawCalls": 373,
+      "triangles": 124810
+    },
+    "resources": {
+      "requests": 8,
+      "transferBytes": 275162,
+      "encodedBytes": 272762,
+      "decodedBytes": 920879
+    },
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "touchPoints": 1,
+      "coarsePointer": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  },
+  {
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "scrollOverflow": {
+      "horizontal": 0,
+      "vertical": 0
+    },
+    "scene": {
+      "fps": 134,
+      "frameMs": 7.47,
+      "drawCalls": 373,
+      "triangles": 124810
+    },
+    "resources": {
+      "requests": 8,
+      "transferBytes": 275162,
+      "encodedBytes": 272762,
+      "decodedBytes": 920879
+    },
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "touchPoints": 1,
+      "coarsePointer": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    }
+  }
+]

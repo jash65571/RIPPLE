@@ -16,7 +16,7 @@ const skipLevelOneTutorial = async (page: Page): Promise<void> => {
 };
 
 const openRobotRoutes = async (page: Page): Promise<void> => {
-  await page.getByRole('button', { name: 'Select vehicle', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose vehicle', exact: true }).click();
   await page.getByRole('button', { name: 'Parcel robot', exact: true }).click();
 };
 
@@ -59,11 +59,11 @@ test('preserves an edit through reload and supports undo', async ({ page }) => {
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible();
   await page.reload();
   await openRobotRoutes(page);
-  await expect(page.getByRole('button', { name: 'Garden path', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /^Garden path/ })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Market crossing', exact: true }).click();
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await openRobotRoutes(page);
-  await expect(page.getByRole('button', { name: 'Garden path', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /^Garden path/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('opens help, text play, settings, and bad level recovery by keyboard', async ({ page }) => {
