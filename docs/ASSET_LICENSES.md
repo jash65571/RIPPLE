@@ -9,6 +9,7 @@
 ## Runtime software
 
 - PixiJS 8.20.1, MIT license
+- Three.js 0.186.0, MIT license
 - React and React DOM 19.3.0, MIT license
 - Workbox runtime included by vite-plugin-pwa, MIT license
 
