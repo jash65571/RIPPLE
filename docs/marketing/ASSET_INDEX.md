@@ -1,5 +1,7 @@
 # Marketing asset index
 
+> Status: outdated after the ten-level mobile campaign redesign. Regenerate these assets from the current build before any release or store work. Current review captures are under `release/qa/campaign`.
+
 All images and videos are captured from the production game. Recheck current channel dimensions and compression rules at posting time.
 
 ## Screenshots

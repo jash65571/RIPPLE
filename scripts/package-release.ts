@@ -76,7 +76,7 @@ const makeZip = (files: readonly { path: string; data: Buffer }[]): Buffer => {
   return Buffer.concat([...localParts, ...centralParts, end]);
 };
 
-const licensePackages = ['pixi.js', 'react', 'react-dom', 'workbox-core', 'workbox-window'];
+const licensePackages = ['three', 'react', 'react-dom', 'workbox-core', 'workbox-window'];
 const notices: string[] = ['RIPPLE third-party notices', ''];
 for (const packageName of licensePackages) {
   const packageDirectory = join('node_modules', ...packageName.split('/'));

@@ -5,9 +5,10 @@
 Checked September 15, 2026.
 
 - [Vite getting started](https://vite.dev/guide/): current Vite requires Node 20.19+, 22.12+, or a newer supported line. RIPPLE records Node 22.21.1 in `.nvmrc`.
-- [PixiJS application guide](https://pixijs.com/8.x/guides/components/application): PixiJS 8 applications use asynchronous `Application.init()`, expose `app.canvas`, and support explicit render control. RIPPLE keeps one application for the active scene and replaces its stage content without destroying shared textures.
-- [PixiJS 8 migration guide](https://pixijs.com/8.x/guides/migrations/v8): PixiJS 8 uses one `pixi.js` package and only containers accept children. RIPPLE composes scene objects with `Container` and `Graphics` accordingly.
-- [Playwright browser projects](https://playwright.dev/docs/browsers): browser projects can cover Chromium, Firefox, WebKit, and mobile device profiles from one configuration. System Chrome completed the local matrix. Firefox and WebKit downloads timed out and remain an environment gap.
+- [Three.js cleanup guide](https://threejs.org/manual/en/how-to-dispose-of-objects.html): geometries, materials, textures, and renderer resources require explicit disposal. Both RIPPLE renderers dispose owned GPU resources when a level unmounts.
+- [Three.js `InstancedMesh`](https://threejs.org/docs/#api/en/objects/InstancedMesh): repeated geometry can share one draw call while retaining separate transforms. RIPPLE instances paving, planting, trees, and dock pieces where the phone view benefits.
+- [Three.js orthographic camera](https://threejs.org/docs/#api/en/cameras/OrthographicCamera): an orthographic projection keeps model scale stable across depth. RIPPLE adjusts the camera frustum to the available portrait width and moves the target briefly for bottom sheets.
+- [Playwright browser projects](https://playwright.dev/docs/browsers): browser projects cover Chromium, Firefox, WebKit, and mobile device profiles from one configuration. All locally supported campaign stories now pass in the three configured engines.
 - [Vite production builds](https://vite.dev/guide/build): multi-page HTML entries and static assets are built through explicit Rollup inputs. RIPPLE uses that path for its public pages and separate game entry.
 - [Vite PWA registration](https://vite-pwa-org.netlify.app/guide/register-service-worker): prompt registration supports a user-controlled update flow. RIPPLE waits for a saved state before offering activation.
 - [Cloudflare Pages custom headers](https://developers.cloudflare.com/pages/configuration/headers/): a `_headers` file can carry CSP, MIME sniffing, referrer, and permissions controls for static assets. The release contains the file, but host behavior still needs deployment verification.
@@ -20,7 +21,7 @@ Checked September 15, 2026.
 
 - [WCAG 2.2 target size enhanced](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html): RIPPLE uses 48px common controls as a product choice while retaining keyboard alternatives.
 - [WCAG 2.2 dragging movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html): route and timing choices use ordinary buttons. Dragging is not required.
-- [WCAG 2.2 resize text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html): the responsive layout allows wrapped labels and moves the plan panel above the board on narrow screens.
+- [WCAG 2.2 resize text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html): the portrait shell wraps objectives, keeps its action bar fixed, and moves longer supporting information into scrollable sheets.
 
 ## Local saves
 

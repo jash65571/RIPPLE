@@ -10,33 +10,51 @@ Date: September 15, 2026
 | Lint | `npm run lint` | Passed |
 | Unit and storage | `npm test` | 4 files, 33 tests passed |
 | Level data | `npm run verify:levels` | 10 levels, 36 plans, unique solution per level |
-| Copy and art provenance | `npm run verify:content` | 75 text files, no prohibited dash characters or first-party SVG files |
-| Public-mode guard | `npm run verify:public-config` | Review mode passed; public mode requires identity, support, and HTTPS origin |
+| Copy and art provenance | `npm run verify:content` | 79 text files, no prohibited dash characters or first-party SVG files |
+| Public-mode guard | `npm run verify:public-config` | Review mode passed; public mode still requires identity, support, and HTTPS origin |
 | Dependencies | `npm audit` and `npm audit --omit=dev` | Zero vulnerabilities in both trees |
-| Production web | `npm run build` | Passed, 48 PWA precache entries |
-| Embedded package | `npm run build:itch` | Passed with relative asset paths and PWA disabled |
-| Browser suite | `npx playwright test` | 39 stories passed, 12 platform-specific stories skipped |
-| PWA update | `npm run verify:pwa-update` | Prompt, controlled activation, reload, and save retention passed |
-| Release | `npm run package:release` | Web and itch.io archives plus SHA-256 manifest |
+| Production web | `npm run build` | Passed, 36 PWA precache entries totaling 975.92 KiB |
+| Embedded build | `npm run build:itch` | Passed with local relative assets and PWA disabled |
+| PWA update | `npm run verify:pwa-update` | Update prompt, controlled activation, reload, and save retention passed |
+| Browser suite | `npx playwright test` | 40 supported stories passed, 20 Chromium-specific stories skipped in Firefox and WebKit |
+| Campaign captures | `npx playwright test tests/e2e/visual.spec.ts --project=chromium` | All ten levels passed at 360 by 800, 390 by 844, and 430 by 932 |
+| Review recording | `npm run capture:campaign` | Four Level 9 state captures and one 21.92-second portrait WebM produced |
+| Performance | `npm run profile:campaign` | 30 warm scene samples plus cache-disabled Level 1 and Level 10 load samples written |
 
 ## Browser stories
 
-The Chromium suite covers the complete campaign, reload persistence, undo, help, text play, native settings dialog, reduced motion, invalid routes, every public page, the returning-player Continue state, offline reload, reset and reveal recovery, all three futures, keyboard playback and history keys, stale-tab notification, import and export, same-origin-only network requests, and all ten levels at 390 by 844 and 1440 by 1000. It also checks Level 01 at 360 by 800, 390 by 844, and 430 by 932 with touch and coarse-pointer emulation, direct robot selection, 48-pixel targets, no page overflow, wrong-choice retry, success, reload, interrupted tutorial recovery, keyboard activation, larger text, and the in-game reduced-motion setting. Firefox and WebKit passed every supported story and both general target layouts. Their touch-emulation stories and offline reload stories are skipped because those checks depend on Chromium capabilities.
+The campaign suite solves all ten levels through visible touch controls and reaches the ending. A separate story runs the original plan on Levels 2 through 10, confirms a useful late-vehicle explanation, presses Try again, and verifies the plan remains editable. Level 10 checks all three future labels and the explicit Finish campaign action.
 
-Twenty level screenshots are written under `release/qa`. Failure traces and screenshots are retained under `test-results`. Marketing captures come from live browser sessions. The trailer source files are WebM recordings of actual interaction.
+Recovery coverage includes undo, reset recovery, guarded solution reveal cancellation, scenario inspection, detailed playback, keyboard history keys, reload persistence, tutorial recovery, stale-tab notification, import and export, offline reload, and same-origin-only runtime requests.
 
-The premium Level 01 pass adds 15 state captures under `release/qa/level-01-premium`: first play, normal play, route selection, failure, and success at 360 by 800, 390 by 844, and 430 by 932. The same directory contains a 390 by 844, 12.60-second WebM recording of route selection, live playback, and success.
+Chromium checks each level at 360 by 800, 390 by 844, and 430 by 932. It asserts zero document overflow, a fully visible action bar, and touch targets at least 48 CSS pixels across. The 360 by 800 capstone also passes with the 1.25 text setting. Level 1 retains direct model touch, wrong-choice retry, first-play progression, and interrupted-tutorial coverage.
 
-Touch-emulated headless Chrome 153 on Windows 10 with an NVIDIA RTX 4050 reported no page overflow. Warm scene samples measured 109, 134, and 134 frames per second, or 9.19, 7.45, and 7.47 milliseconds per frame, at those three sizes. Each reported 373 draw calls and 124,810 triangles. Initial loading used 8 requests, 275,162 transfer bytes, 272,762 encoded bytes, and 920,879 decoded bytes. The production Level 01 renderer chunk measured 574.95 KB raw and 146.31 KB gzip. These desktop GPU results are not evidence of physical phone performance.
+Firefox and WebKit run the full campaign, failure, save, keyboard, import, export, and network stories. Touch-device geometry and service-worker offline checks remain Chromium-specific because those tests depend on Chromium emulation capabilities.
 
-The final trailer sources measured 15.04 seconds and 30.04 seconds in system Chrome. Sample frames confirmed that the captions are visible. The three required marketing stills show actor inspection, a causal deadline failure, and a plan that passes two futures while failing the closed-lane future. Square, portrait, and wide promotional exports were checked at their intended pixel sizes.
+## Visual evidence
 
-## Manual visual review
+Thirty native-size normal-play captures are stored under `release/qa/campaign/{360x800,390x844,430x932}`. Each size includes Levels 1 through 10. The review folder adds 390 by 844 captures of the Level 9 tutorial, route chooser, Upper lane closed failure, and corrected success.
 
-Reviewed all 15 portrait captures at native pixel size and sampled the portrait recording at route selection, playback, and success. The review covered material distinction, hierarchy, label legibility, vehicle and destination clipping, control reachability, route-sheet fit, camera framing, route alignment, result placement, and fixed notices. The offline-ready state lives in the Level 01 menu so it cannot cover a route choice.
+The portrait recording is `release/qa/campaign/review/campaign-failed-future-correction-390x844.webm`. It is a 390 by 844 VP8 WebM at 25 frames per second and lasts 21.92 seconds. The recording shows Upper lane passing Normal day and Early bus, failing Upper lane closed, preserving the choice, changing to Garden path, and passing all three futures.
 
-The Level 01 pass checked the first-play demonstration, direct and labeled vehicle selection, wrong-route failure, preserved retry, successful route, tutorial skip and replay, interrupted tutorial recovery, reload persistence, reduced motion, advanced playback access, continuous trace-driven movement, full campaign completion, desktop fit, and the Level 02 transition. All relevant vehicles, destinations, and route choices remain visible while the route sheet is open.
+Native-size review covered goal and future labels, road continuity, route highlights, actor and destination visibility, bridge and handoff landmarks, sheet framing, action-bar reach, result placement, and decorative occlusion. Playable objects remain visible in the captured states. The Level 1 crossing overlap and island margin were widened during this pass.
+
+## Performance and load measurements
+
+The performance file is `release/qa/campaign/performance.json`. Measurements used the local production preview in headless Chrome 153.0.8010.37 on Windows with an NVIDIA GeForce RTX 4050 Laptop GPU through ANGLE Direct3D 11. The browser reported 16 logical processors, 16 GiB device memory, one emulated touch point, and device scale factor 1.
+
+Across 30 warm samples, reported scene rates ranged from 109 to 141 frames per second, or 7.07 to 9.21 milliseconds per frame. Draw calls ranged from 90 to 205 and triangles ranged from 46,472 to 106,036. Level 1 was the highest-cost scene at 205 draw calls and 106,036 triangles. Levels 2 through 10 ranged from 90 to 153 draw calls and from 46,472 to 62,656 triangles.
+
+Cache-disabled initial loads at 390 by 844 each used 9 requests. Level 1 transferred 276,340 bytes with 273,640 encoded bytes and 925,851 decoded bytes. Level 10 transferred 276,346 bytes with 273,646 encoded bytes and 927,354 decoded bytes.
+
+These measurements come from a laptop GPU with desktop touch emulation. They do not establish physical-phone frame pacing, memory pressure, battery cost, or thermal behavior.
+
+## Asset and package status
+
+The PixiJS renderer and dependency were removed after confirming no remaining imports. Three.js, React, Workbox, and Nunito Sans remain documented in `docs/ASSET_LICENSES.md`, and the release packager now gathers the Three.js license.
+
+The older marketing images, trailers, and release archives show the replaced interface. Their index and release notes mark them outdated. They were not regenerated because campaign visual approval and physical-phone acceptance are still pending.
 
 ## Not run here
 
-Physical iOS and Android hardware, screen readers, real device browser chrome and safe-area behavior, sustained mobile GPU performance, installed-app lifecycle, hosting headers, and storefront submission are outside current access. Mobile interaction testing used desktop browser touch emulation.
+Physical iOS and Android hardware, screen readers, real-device browser chrome, hardware safe areas, sustained mobile thermal tests, installed-app lifecycle, hosted security headers, public URLs, and storefront submission were not available. No deployment or publication was performed.

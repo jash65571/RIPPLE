@@ -93,7 +93,7 @@ const COLORS = {
 const ROAD_SURFACE_Y = 1.02;
 const VEHICLE_HEIGHT = 1.05;
 const CAMERA_FRUSTUM = 22;
-const MIN_HORIZONTAL_FRUSTUM = 21.2;
+const MIN_HORIZONTAL_FRUSTUM = 22.6;
 const WATER_VERTEX_MOTION = 0.055;
 const CAMERA_POSITION = new THREE.Vector3(18, 30, 24);
 const CAMERA_TARGET = new THREE.Vector3(0, 0.6, 0);
@@ -250,8 +250,7 @@ const addRoad = (
 };
 
 const addPavingArea = (
-  parent: THREE.Object3D,
-  materials: SceneMaterials,
+  instances: { x: number; z: number; size: number; alternate: boolean }[],
   centerX: number,
   centerZ: number,
   columns: number,
@@ -260,11 +259,29 @@ const addPavingArea = (
 ): void => {
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
-      const slab = roundedBox([size - 0.08, 0.12, size - 0.08], (row + column) % 3 === 0 ? materials.pavingB : materials.pavingA, 0.06, 2);
-      slab.position.set(centerX + (column - (columns - 1) / 2) * size, 0.98, centerZ + (row - (rows - 1) / 2) * size);
-      slab.castShadow = false;
-      parent.add(slab);
+      instances.push({
+        x: centerX + (column - (columns - 1) / 2) * size,
+        z: centerZ + (row - (rows - 1) / 2) * size,
+        size,
+        alternate: (row + column) % 3 === 0,
+      });
     }
+  }
+};
+
+const addPavingInstances = (parent: THREE.Object3D, materials: SceneMaterials, specs: readonly { x: number; z: number; size: number; alternate: boolean }[]): void => {
+  const geometry = new RoundedBoxGeometry(1, 1, 1, 2, 0.06);
+  const primarySpecs = specs.filter((spec) => !spec.alternate);
+  const alternateSpecs = specs.filter((spec) => spec.alternate);
+  const matrix = new THREE.Matrix4();
+  for (const [surface, surfaceSpecs] of [[materials.pavingA, primarySpecs], [materials.pavingB, alternateSpecs]] as const) {
+    const slabs = new THREE.InstancedMesh(geometry, surface, surfaceSpecs.length);
+    surfaceSpecs.forEach((spec, index) => {
+      matrix.compose(new THREE.Vector3(spec.x, 0.98, spec.z), new THREE.Quaternion(), new THREE.Vector3(spec.size - 0.08, 0.12, spec.size - 0.08));
+      slabs.setMatrixAt(index, matrix);
+    });
+    slabs.receiveShadow = true;
+    parent.add(slabs);
   }
 };
 
@@ -310,23 +327,36 @@ const addGardenTufts = (parent: THREE.Object3D, materials: SceneMaterials): void
   parent.add(tufts);
 };
 
-const addTree = (parent: THREE.Object3D, materials: SceneMaterials, x: number, z: number, scale: number): void => {
-  const tree = new THREE.Group();
-  tree.position.set(x, 1.02, z);
-  tree.scale.setScalar(scale);
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.17, 0.92, 8), materials.timberDark);
-  trunk.position.y = 0.44;
-  trunk.castShadow = true;
-  tree.add(trunk);
+const addTrees = (parent: THREE.Object3D, materials: SceneMaterials): void => {
+  const trunkGeometry = new THREE.CylinderGeometry(0.11, 0.17, 0.92, 8);
+  const crownGeometry = new THREE.DodecahedronGeometry(1, 1);
+  const trunks = new THREE.InstancedMesh(trunkGeometry, materials.timberDark, TREE_SPECS.length);
+  const darkCrowns = new THREE.InstancedMesh(crownGeometry, materials.gardenDark, TREE_SPECS.length);
+  const lightCrowns = new THREE.InstancedMesh(crownGeometry, materials.lawn, TREE_SPECS.length * 2);
   const canopies = [[0, 1.25, 0, 0.62], [-0.28, 1.08, 0.08, 0.46], [0.25, 1.1, -0.05, 0.5]] as const;
-  canopies.forEach(([offsetX, offsetY, offsetZ, radius], index) => {
-    const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(radius, 1), index === 0 ? materials.gardenDark : materials.lawn);
-    crown.position.set(offsetX, offsetY, offsetZ);
-    crown.scale.y = 1.08;
-    crown.castShadow = true;
-    tree.add(crown);
+  const matrix = new THREE.Matrix4();
+  const rotation = new THREE.Quaternion();
+  let lightIndex = 0;
+  TREE_SPECS.forEach(([x, z, scale], treeIndex) => {
+    matrix.compose(new THREE.Vector3(x, 1.02 + 0.44 * scale, z), rotation, new THREE.Vector3(scale, scale, scale));
+    trunks.setMatrixAt(treeIndex, matrix);
+    canopies.forEach(([offsetX, offsetY, offsetZ, radius], canopyIndex) => {
+      matrix.compose(
+        new THREE.Vector3(x + offsetX * scale, 1.02 + offsetY * scale, z + offsetZ * scale),
+        rotation,
+        new THREE.Vector3(radius * scale, radius * scale * 1.08, radius * scale),
+      );
+      if (canopyIndex === 0) darkCrowns.setMatrixAt(treeIndex, matrix);
+      else {
+        lightCrowns.setMatrixAt(lightIndex, matrix);
+        lightIndex += 1;
+      }
+    });
   });
-  parent.add(tree);
+  trunks.castShadow = true;
+  darkCrowns.castShadow = true;
+  lightCrowns.castShadow = true;
+  parent.add(trunks, darkCrowns, lightCrowns);
 };
 
 const addBuilding = (
@@ -388,24 +418,32 @@ const addBuilding = (
 const addDock = (parent: THREE.Object3D, materials: SceneMaterials): void => {
   const dock = new THREE.Group();
   const plankWidth = 0.72;
+  const plankGeometry = new RoundedBoxGeometry(1, 1, 1, 2, 0.07);
+  const planks = new THREE.InstancedMesh(plankGeometry, materials.timber, 9);
+  const grainGeometry = new RoundedBoxGeometry(1, 1, 1, 1, 0.01);
+  const grainLines = new THREE.InstancedMesh(grainGeometry, materials.timberDark, 9);
+  const matrix = new THREE.Matrix4();
   for (let index = 0; index < 9; index += 1) {
-    const plank = roundedBox([plankWidth - 0.055, 0.24, 2.65], materials.timber, 0.07, 2);
-    plank.position.set(-4.9 + index * plankWidth, 0.74 + (index % 3) * 0.012, 10.25);
-    dock.add(plank);
-    const grain = roundedBox([0.035, 0.018, 2.15], materials.timberDark, 0.01, 1);
-    grain.position.set(plank.position.x + 0.15, 0.875, 10.25);
-    grain.castShadow = false;
-    dock.add(grain);
+    const x = -4.9 + index * plankWidth;
+    matrix.compose(new THREE.Vector3(x, 0.74 + (index % 3) * 0.012, 10.25), new THREE.Quaternion(), new THREE.Vector3(plankWidth - 0.055, 0.24, 2.65));
+    planks.setMatrixAt(index, matrix);
+    matrix.compose(new THREE.Vector3(x + 0.15, 0.875, 10.25), new THREE.Quaternion(), new THREE.Vector3(0.035, 0.018, 2.15));
+    grainLines.setMatrixAt(index, matrix);
   }
+  planks.castShadow = true;
+  planks.receiveShadow = true;
+  dock.add(planks, grainLines);
   const fascia = roundedBox([6.55, 0.44, 0.28], materials.timberDark, 0.08, 2);
   fascia.position.set(-2.02, 0.69, 11.58);
   dock.add(fascia);
-  for (const x of [-4.8, -2.7, -0.6, 1.0]) {
-    const support = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.19, 2.25, 10), materials.timberDark);
-    support.position.set(x, -0.05, 11.15);
-    support.castShadow = true;
-    dock.add(support);
-  }
+  const supportGeometry = new THREE.CylinderGeometry(0.14, 0.19, 2.25, 10);
+  const supports = new THREE.InstancedMesh(supportGeometry, materials.timberDark, 4);
+  [-4.8, -2.7, -0.6, 1.0].forEach((x, index) => {
+    matrix.makeTranslation(x, -0.05, 11.15);
+    supports.setMatrixAt(index, matrix);
+  });
+  supports.castShadow = true;
+  dock.add(supports);
   const step = roundedBox([2.5, 0.28, 0.95], materials.pavingA, 0.1, 2);
   step.position.set(-2.3, 0.9, 8.95);
   dock.add(step);
@@ -635,10 +673,12 @@ const createHarbor = (waterGeometry: THREE.PlaneGeometry, materials: SceneMateri
   islandTop.position.set(0, 0.75, 0);
   harbor.add(shallow, island, islandTop);
 
-  addPavingArea(harbor, materials, 0, 0, 4, 4, 1.15);
-  addPavingArea(harbor, materials, -0.2, 7.1, 4, 2, 1.12);
-  addPavingArea(harbor, materials, 4.9, 2.05, 3, 2, 1.08);
-  addPavingArea(harbor, materials, -1.0, -5.6, 3, 2, 1.08);
+  const pavingInstances: { x: number; z: number; size: number; alternate: boolean }[] = [];
+  addPavingArea(pavingInstances, 0, 0, 4, 4, 1.15);
+  addPavingArea(pavingInstances, -0.2, 7.1, 4, 2, 1.12);
+  addPavingArea(pavingInstances, 4.9, 2.05, 3, 2, 1.08);
+  addPavingArea(pavingInstances, -1.0, -5.6, 3, 2, 1.08);
+  addPavingInstances(harbor, materials, pavingInstances);
 
   addLawnBed(harbor, materials, -4.55, -5.15, 2.15, 3.45, -0.18);
   addLawnBed(harbor, materials, -1.75, -4.8, 2.35, 2.7, 0.08);
@@ -650,10 +690,10 @@ const createHarbor = (waterGeometry: THREE.PlaneGeometry, materials: SceneMateri
   addRoad(harbor, ROUTE_CURVES.crossing.B!, 1.9, materials);
   addRoad(harbor, ROUTE_CURVES.garden.R!, 1.42, materials, true);
 
-  const crossingBase = roundedBox([3.45, 0.2, 3.45], materials.roadEdge, 0.55, 4);
+  const crossingBase = roundedBox([4.15, 0.2, 4.15], materials.roadEdge, 0.62, 4);
   crossingBase.position.set(0, ROAD_SURFACE_Y - 0.055, 0);
   crossingBase.rotation.y = Math.PI / 4;
-  const crossingTop = roundedBox([3.08, 0.16, 3.08], materials.road, 0.48, 4);
+  const crossingTop = roundedBox([3.76, 0.16, 3.76], materials.road, 0.55, 4);
   crossingTop.position.set(0, ROAD_SURFACE_Y + 0.02, 0);
   crossingTop.rotation.y = Math.PI / 4;
   harbor.add(crossingBase, crossingTop);
@@ -670,7 +710,7 @@ const createHarbor = (waterGeometry: THREE.PlaneGeometry, materials: SceneMateri
   addBuilding(harbor, materials, 4.9, 2.1, 2.5, 2.25, 2.3, materials.plasterCoral, materials.roofCoral, -1, true);
   addBuilding(harbor, materials, -1.05, -5.55, 2.35, 2, 2.05, materials.plasterWarm, materials.roofTeal, 1);
 
-  TREE_SPECS.forEach(([x, z, scale]) => addTree(harbor, materials, x, z, scale));
+  addTrees(harbor, materials);
   for (const [x, z] of BUOY_SPECS) {
     const buoy = new THREE.Group();
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), materials.robot);
@@ -714,7 +754,7 @@ export function LevelOneHarborScene({
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.02;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.VSMShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.domElement.setAttribute('aria-hidden', 'true');
     host.replaceChildren(renderer.domElement);

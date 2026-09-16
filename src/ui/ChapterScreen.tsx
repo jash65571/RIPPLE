@@ -31,8 +31,8 @@ export function ChapterScreen({ levels, completed, onHome, onLevel }: ChapterScr
               return (
                 <button key={level.id} type="button" disabled={!isUnlocked} onClick={() => onLevel(level.id)}>
                   <span className="level-number">{level.id}</span>
-                  <span><strong>{content.title}</strong><small>{isComplete ? 'Completed' : isUnlocked ? `${level.scenarios.length} ${level.scenarios.length === 1 ? 'future' : 'futures'} · ${level.budget} ${level.budget === 1 ? 'change' : 'changes'}` : 'Complete an earlier puzzle to open'}</small></span>
-                  <span className={isComplete ? 'completion-mark complete' : 'completion-mark'} aria-hidden="true">{isComplete ? '✓' : '→'}</span>
+                  <span><strong>{content.title}</strong><small>{isComplete ? 'Completed' : isUnlocked ? `${level.scenarios.length} ${level.scenarios.length === 1 ? 'future' : 'futures'}, ${level.budget} ${level.budget === 1 ? 'change' : 'changes'}` : 'Complete an earlier puzzle to open'}</small></span>
+                  <span className={isComplete ? 'completion-mark complete' : 'completion-mark'} aria-hidden="true">{isComplete ? 'Done' : ''}</span>
                 </button>
               );
             })}

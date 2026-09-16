@@ -20,21 +20,40 @@ test('works offline after the first complete load', async ({ page, context, brow
 });
 
 test('supports recovery, reveal cancellation, scenarios, and playback keys', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/play/#/level/10?v=1');
-  await page.getByRole('button', { name: 'Garden path', exact: true }).click();
+  await page.getByRole('button', { name: 'Got it', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose vehicle', exact: true }).click();
+  await page.getByRole('button', { name: /^Parcel robot/ }).click();
+  await page.getByRole('button', { name: /^Garden path/ }).click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await page.getByRole('button', { name: 'Reset puzzle' }).click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await page.getByRole('button', { name: 'Restore my plan' }).click();
-  await expect(page.getByRole('button', { name: 'Garden path', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Hint', exact: true }).click({ clickCount: 3 });
+  await page.getByRole('button', { name: 'Choose vehicle', exact: true }).click();
+  await page.getByRole('button', { name: /^Parcel robot/ }).click();
+  await expect(page.getByRole('button', { name: /^Garden path/ })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Hints', exact: true }).click();
+  const hint = page.getByRole('button', { name: 'Hint', exact: true });
+  await hint.click();
+  await hint.click();
+  await hint.click();
   await page.getByRole('button', { name: 'Show the solution' }).click();
   await expect(page.getByRole('dialog', { name: 'Replace your plan with the solution?' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Replace your plan with the solution?' })).toBeHidden();
-  await page.getByRole('button', { name: 'Quay path', exact: true }).click();
-  await page.getByRole('button', { name: 'Test plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose vehicle', exact: true }).click();
+  await page.getByRole('button', { name: /^Market cart/ }).click();
+  await page.getByRole('button', { name: /^Quay path/ }).click();
+  await page.getByRole('button', { name: 'Go', exact: true }).click();
   for (const label of ['Normal day', 'Upper lane closed', 'Early bus']) {
     await expect(page.getByRole('tab', { name: new RegExp(`${label} Passed`) })).toBeVisible();
   }
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Inspect playback', exact: true }).click();
   await page.getByRole('button', { name: 'Compare original plan' }).click();
   await page.keyboard.press('Space');
   await page.keyboard.press('z');

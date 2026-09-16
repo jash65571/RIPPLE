@@ -8,6 +8,7 @@ import { simulate } from '../game/simulate';
 import { LEVEL_ONE_TUTORIAL_COMPLETE_STEP } from '../storage/model';
 import type { LevelScreenProps } from './LevelScreen';
 import { SceneBoundary } from './SceneBoundary';
+import { useReducedMotion } from './useReducedMotion';
 
 const LevelOneHarborScene = lazy(async () => {
   const module = await import('../render/LevelOneHarborScene');
@@ -56,6 +57,7 @@ export function LevelOneScreen({
   onOpenSettings,
 }: LevelScreenProps) {
   const content = levelContent[level.id]!;
+  const reducedMotion = useReducedMotion(settings.reducedMotion);
   const [planState, setPlanState] = useState(() => savedPlan === undefined ? createPlanState() : { ...savedPlan, recovery: null });
   const startingTutorialStep = initialTutorialStep(savedPlan?.tutorialStep, savedPlan !== undefined);
   const [tutorialStep, setTutorialStep] = useState(startingTutorialStep);
@@ -119,7 +121,7 @@ export function LevelOneScreen({
     setRunOutcome('none');
     setPlaybackMode(mode);
     setTimelineBeat(0);
-    if (settings.reducedMotion) {
+    if (reducedMotion) {
       setPlaying(false);
       setTimelineBeat(mode === 'demo' ? DEMO_CONFLICT_BEAT : timelineEnd);
     } else {
@@ -156,7 +158,7 @@ export function LevelOneScreen({
   };
 
   useEffect(() => {
-    if (!playing || settings.reducedMotion || timelineEnd === 0) return;
+    if (!playing || reducedMotion || timelineEnd === 0) return;
     let frame = 0;
     let previous = performance.now();
     const advance = (now: number): void => {
@@ -168,11 +170,11 @@ export function LevelOneScreen({
     };
     frame = window.requestAnimationFrame(advance);
     return () => window.cancelAnimationFrame(frame);
-  }, [playbackMode, playing, settings.reducedMotion, speed, timelineEnd]);
+  }, [playbackMode, playing, reducedMotion, speed, timelineEnd]);
 
   useEffect(() => {
     if (playbackMode === 'idle') return;
-    if (playbackMode === 'demo' && (settings.reducedMotion || timelineBeat >= timelineEnd)) {
+    if (playbackMode === 'demo' && (reducedMotion || timelineBeat >= timelineEnd)) {
       setPlaybackMode('idle');
       setPlaying(false);
       setTimelineBeat(DEMO_CONFLICT_BEAT);
@@ -183,15 +185,15 @@ export function LevelOneScreen({
   });
 
   useEffect(() => {
-    if (settings.reducedMotion) setPlaying(false);
-  }, [settings.reducedMotion]);
+    if (reducedMotion) setPlaying(false);
+  }, [reducedMotion]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent): void => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.code === 'Space') {
         event.preventDefault();
-        if (playbackMode !== 'idle' && !settings.reducedMotion) setPlaying((value) => !value);
+        if (playbackMode !== 'idle' && !reducedMotion) setPlaying((value) => !value);
       }
       if (event.key.toLowerCase() === 'z' && planState.undo.length > 0) savePlanState(undoPlanEdit(planState));
       if (event.key === 'Escape') { setMenuOpen(false); setBottomSheet('none'); }
@@ -269,7 +271,7 @@ export function LevelOneScreen({
               timelineBeat={timelineBeat}
               selectedActorId={selectedActorId}
               zoom={1}
-              reducedMotion={settings.reducedMotion}
+              reducedMotion={reducedMotion}
               showRobotRoutes={showRoutes}
               emphasizeDestinations={tutorialStep === TUTORIAL_STEP.goal}
               bottomSheetOpen={sheetOpen}

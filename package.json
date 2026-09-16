@@ -16,13 +16,14 @@
     "verify:public-config": "tsx scripts/verify-public-config.ts",
     "generate:assets": "tsx scripts/generate-assets.ts",
     "capture:marketing": "tsx scripts/capture-marketing.ts",
+    "capture:campaign": "tsx scripts/capture-campaign-review.ts",
+    "profile:campaign": "tsx scripts/profile-campaign.ts",
     "verify:pwa-update": "tsx scripts/verify-pwa-update.ts",
     "verify:release": "npm run typecheck && npm run lint && npm run test && npm run verify:levels && npm run verify:content && npm run verify:public-config",
     "build:itch": "tsc -b && vite build --config vite.itch.config.ts",
     "package:release": "npm run build && npm run build:itch && tsx scripts/package-release.ts"
   },
   "dependencies": {
-    "pixi.js": "8.20.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "0.186.0"
